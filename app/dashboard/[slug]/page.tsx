@@ -11,11 +11,11 @@ function HelpTooltip({ text }: { text: string }) {
     <div className="relative group shrink-0">
       <button
         type="button"
-        className="flex h-6 w-6 items-center justify-center rounded-full border border-white/30 bg-transparent text-[12px] text-white/50 transition hover:border-[#E5D3B3] hover:text-[#E5D3B3]"
+        className="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-transparent text-[9px] text-white/40 transition hover:border-white hover:text-white"
       >
         ?
       </button>
-      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 top-10 z-30 hidden w-72 rounded-2xl border border-white/20 bg-black/95 p-5 text-sm font-light leading-relaxed text-white shadow-2xl group-hover:block backdrop-blur-3xl">
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 top-8 z-50 hidden w-64 rounded-lg border border-white/10 bg-[#0A0A0A] p-4 text-[11px] font-light leading-relaxed text-white/70 shadow-2xl group-hover:block backdrop-blur-xl">
         {text}
       </div>
     </div>
@@ -45,15 +45,13 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
     return <main className="min-h-screen bg-black text-white flex items-center justify-center uppercase tracking-[0.5em] font-light">Location Not Found</main>;
   }
 
-  // MÉTRICAS GERAIS (COLUNA CORRETA: event_type)
-  const { count: appViewsCount } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("restaurant_id", restaurant.id).eq("event_type", "app_view").gte("created_at", rangeStart);
-  const { count: reviewClicksCount } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("restaurant_id", restaurant.id).eq("event_type", "review_click").gte("created_at", rangeStart);
+  const { count: totalViews } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("restaurant_id", restaurant.id).eq("event_type", "app_view").gte("created_at", rangeStart);
+  const { count: totalReviews } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("restaurant_id", restaurant.id).eq("event_type", "review_click").gte("created_at", rangeStart);
 
-  const totalViews = appViewsCount ?? 0;
-  const totalReviews = reviewClicksCount ?? 0;
-  const ctr = totalViews > 0 ? ((totalReviews / totalViews) * 100).toFixed(1) : "0.0";
+  const views = totalViews ?? 0;
+  const reviews = totalReviews ?? 0;
+  const ctr = views > 0 ? ((reviews / views) * 100).toFixed(1) : "0.0";
 
-  // RANKINGS E SERVIDORES ATIVOS
   const { data: servers } = await supabase.from("servers").select("id, name").eq("restaurant_id", restaurant.id);
   const { data: appEvents } = await supabase.from("events").select("server_id").eq("restaurant_id", restaurant.id).eq("event_type", "app_view").gte("created_at", rangeStart).not("server_id", "is", null);
   const { data: reviewEvents } = await supabase.from("events").select("server_id").eq("restaurant_id", restaurant.id).eq("event_type", "review_click").gte("created_at", rangeStart).not("server_id", "is", null);
@@ -70,91 +68,88 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
 
   const topPerformer = reviewRanking[0]?.count > 0 || appRanking[0]?.count > 0 
     ? (reviewRanking[0].count >= appRanking[0].count ? reviewRanking[0].name : appRanking[0].name) 
-    : "No Data";
-
-  const activeApp = appRanking.filter(s => s.count > 0).length;
-  const activeReview = reviewRanking.filter(s => s.count > 0).length;
+    : "NO DATA";
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white p-8 md:p-16 font-sans relative overflow-hidden">
-      {/* TEXTURA FUNDO */}
-      <div className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1544025162-8315ea07f239?q=80&w=2000&auto=format&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
-
-      <div className="max-w-[1500px] mx-auto space-y-12 relative z-10">
+    <main className="min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black">
+      <div className="max-w-[1400px] mx-auto px-8 py-16 space-y-24">
         
-        {/* HEADER IMPACTANTE */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-white/10 pb-10 gap-6">
-          <div>
-            <p className="text-[#E5D3B3] text-sm tracking-[0.4em] uppercase font-light mb-3">Chef Experience Intelligence</p>
-            <h1 className="text-6xl md:text-8xl font-bold tracking-tighter uppercase leading-none">{restaurant.name}</h1>
+        {/* HEADER: ESTILO LOGIN (CLEAN) */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
+          <div className="space-y-4">
+            <p className="text-[10px] tracking-[0.5em] text-white/30 uppercase font-light">Chef Experience Intelligence</p>
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight uppercase leading-none">{restaurant.name}</h1>
           </div>
-          <nav className="flex gap-2 bg-white/5 p-1.5 rounded-full border border-white/10 backdrop-blur-xl">
+          
+          <nav className="flex items-center gap-1 border-b border-white/10 pb-2">
             {["day", "week", "month", "year"].map(r => (
-              <Link key={r} href={`/dashboard/${slug}?range=${r}`} className={`px-8 py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all ${range === r ? "bg-[#E5D3B3] text-black" : "text-white/40 hover:text-white"}`}>{r}</Link>
+              <Link key={r} href={`/dashboard/${slug}?range=${r}`} 
+                className={`px-4 py-1 text-[10px] uppercase tracking-[0.3em] transition-all ${range === r ? "text-white font-bold border-b border-white" : "text-white/20 hover:text-white"}`}>
+                {r}
+              </Link>
             ))}
           </nav>
-        </div>
+        </header>
 
-        {/* HERO CARD: O DESTAQUE */}
-        <div className="rounded-[2.5rem] border border-white/10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-black to-black p-12 md:p-20 shadow-2xl group">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-10">
-            <div className="space-y-6 flex-1">
-              <span className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[#E5D3B3] font-bold">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#E5D3B3] shadow-[0_0_12px_rgba(229,211,179,0.8)] animate-pulse"></span> Top Performer
-              </span>
-              <h2 className="text-7xl md:text-9xl font-bold tracking-tighter uppercase leading-[0.8]">{topPerformer}</h2>
-              <p className="text-white/40 text-lg font-light italic">Líder absoluto de performance nesta unidade.</p>
+        {/* HERO: SILVER GRADIENT CARD */}
+        <section className="relative rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent p-12 md:p-20 overflow-hidden group">
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-12">
+            <div className="space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
+                <span className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-medium">Top Performer</span>
+              </div>
+              <h2 className="text-6xl md:text-8xl font-bold tracking-tighter uppercase leading-[0.8]">{topPerformer}</h2>
+              <p className="text-white/30 text-sm tracking-widest font-light">LÍDER DE PERFORMANCE NESTA UNIDADE</p>
             </div>
             <div className="text-center md:text-right">
-              <p className="text-white/30 text-xs uppercase tracking-[0.4em] mb-4 font-bold">Unit Score</p>
-              <p className="text-[10rem] md:text-[13rem] font-bold leading-none tracking-tighter text-[#E5D3B3]">{totalViews + totalReviews}</p>
+              <p className="text-white/20 text-[10px] uppercase tracking-[0.5em] mb-4">Unit Score</p>
+              <p className="text-9xl md:text-[12rem] font-bold leading-none tracking-tighter text-white">{views + reviews}</p>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* GLOBAL STATS: CONTRASTE MÁXIMO */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-0 rounded-3xl border border-white/5 bg-black/40 backdrop-blur-sm overflow-hidden divide-x divide-white/5 divide-y md:divide-y-0">
+        {/* STATS: GRID MINIMALISTA */}
+        <div className="grid grid-cols-2 md:grid-cols-5 border-t border-white/10">
           {[
-            { label: "App Views", val: totalViews, tt: "Visitas totais ao menu digital." },
-            { label: "Review Clicks", val: totalReviews, tt: "Cliques no fluxo de avaliação." },
-            { label: "Conversion", val: `${ctr}%`, tt: "Eficiência total da casa." },
-            { label: "Active App", val: activeApp, tt: "Garçons que geraram visualizações." },
-            { label: "Active Review", val: activeReview, tt: "Garçons que geraram avaliações." }
+            { label: "App Views", val: views },
+            { label: "Review Clicks", val: reviews },
+            { label: "Conversion", val: `${ctr}%` },
+            { label: "Active App", val: appRanking.filter(s => s.count > 0).length },
+            { label: "Active Review", val: reviewRanking.filter(s => s.count > 0).length }
           ].map((m, i) => (
-            <div key={i} className="p-10 text-center flex flex-col items-center justify-center">
-              <div className="flex items-center gap-2 mb-6">
-                <span className="text-[10px] uppercase tracking-[0.3em] text-white/40 font-bold">{m.label}</span>
-                <HelpTooltip text={m.tt} />
-              </div>
-              <p className={`text-5xl md:text-6xl font-bold tracking-tighter ${m.val === 0 || m.val === "0.0%" ? "text-white/10" : "text-white"}`}>{m.val}</p>
+            <div key={i} className="py-12 px-4 border-r border-white/5 last:border-0 text-center space-y-6">
+              <p className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">{m.label}</p>
+              <p className="text-4xl md:text-5xl font-bold tracking-tighter">{m.val}</p>
             </div>
           ))}
         </div>
 
-        {/* RANKINGS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        {/* RANKINGS: ESTILO EDITORIAL */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
           {[
             { title: "App Engagement", data: appRanking },
             { title: "Review Performance", data: reviewRanking }
           ].map((rank, i) => (
-            <div key={i} className="bg-[#0a0a0a] border border-white/10 p-12 rounded-[2.5rem] shadow-xl">
-              <h3 className="text-white/40 text-xs uppercase tracking-[0.4em] font-bold mb-12 border-b border-white/5 pb-6 italic">{rank.title}</h3>
-              <div className="space-y-10">
+            <div key={i} className="space-y-12">
+              <h3 className="text-white/20 text-[10px] uppercase tracking-[0.5em] font-bold border-b border-white/10 pb-6 italic">{rank.title}</h3>
+              <div className="space-y-8">
                 {rank.data.slice(0, 5).map((s, idx) => (
-                  <div key={idx} className="group">
-                    <div className="flex justify-between items-end mb-4 font-bold uppercase tracking-tight">
-                      <span className="text-xl text-white/80 group-hover:text-white transition-colors">0{idx + 1} — {s.name}</span>
-                      <span className={`text-2xl ${s.count > 0 ? "text-[#E5D3B3]" : "text-white/10"}`}>{s.count}</span>
-                    </div>
-                    <div className="w-full h-[1.5px] bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-[#E5D3B3] transition-all duration-1000" style={{ width: `${(s.count / (Math.max(...rank.data.map(d => d.count)) || 1)) * 100}%` }}></div>
-                    </div>
+                  <div key={idx} className="flex justify-between items-end border-b border-white/5 pb-4 group">
+                    <span className="text-lg font-light tracking-tight text-white/60 group-hover:text-white transition-colors uppercase">
+                      <span className="text-white/20 mr-4 font-mono">0{idx + 1}</span>{s.name}
+                    </span>
+                    <span className="text-2xl font-bold text-white tracking-tighter">{s.count}</span>
                   </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
+
+        <footer className="pt-20 opacity-20">
+          <p className="text-[9px] tracking-[0.5em] uppercase text-center font-light">© 2026 LOOPING MEDIA INTELLIGENCE</p>
+        </footer>
       </div>
     </main>
   );
