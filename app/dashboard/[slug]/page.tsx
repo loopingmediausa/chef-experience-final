@@ -11,12 +11,12 @@ function HelpTooltip({ text }: { text: string }) {
     <div className="relative group shrink-0">
       <button
         type="button"
-        className="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-transparent text-[10px] text-white/50 transition hover:border-[#E5D3B3]/80 hover:text-[#E5D3B3]"
+        className="flex h-5 w-5 items-center justify-center rounded-full border border-white/30 bg-transparent text-[10px] text-white/70 transition hover:border-[#E5D3B3] hover:text-[#E5D3B3]"
       >
         ?
       </button>
 
-      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 top-8 z-30 hidden w-64 rounded-xl border border-white/10 bg-[#0a0a0a]/95 p-4 text-xs font-light leading-relaxed text-white/90 shadow-2xl group-hover:block backdrop-blur-xl">
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 top-8 z-30 hidden w-64 rounded-xl border border-white/10 bg-[#0a0a0a]/95 p-4 text-sm font-normal leading-relaxed text-white/90 shadow-2xl group-hover:block backdrop-blur-xl">
         {text}
       </div>
     </div>
@@ -73,8 +73,8 @@ export default async function DashboardPage({
       <main className="min-h-screen bg-[#050505] px-6 py-6 text-white flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1544025162-8315ea07f239?q=80&w=2000&auto=format&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
         <div className="text-center relative z-10">
-          <h1 className="text-4xl font-light tracking-wide">Location Not Found</h1>
-          <p className="mt-4 text-white/50 text-lg font-light">
+          <h1 className="text-4xl font-normal tracking-wide">Location Not Found</h1>
+          <p className="mt-4 text-white/70 text-lg font-normal">
             Please verify the unique link for this dashboard.
           </p>
         </div>
@@ -168,7 +168,7 @@ export default async function DashboardPage({
 
   const getStyle = (value: number | string) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
-    return num > 0 ? "text-white/95" : "text-white/20";
+    return num > 0 ? "text-white" : "text-white/30";
   };
 
   return (
@@ -189,10 +189,10 @@ export default async function DashboardPage({
         {/* Cabeçalho */}
         <div className="flex flex-col md:flex-row justify-between md:items-end gap-8 mb-12 border-b border-white/10 pb-8">
           <div>
-            <p className="text-xs tracking-[0.3em] text-[#E5D3B3]/80 font-light uppercase mb-3">
+            <p className="text-sm tracking-[0.3em] text-[#E5D3B3] font-medium uppercase mb-3">
               Chef Experience Dashboard
             </p>
-            <h1 className="text-5xl md:text-6xl font-light tracking-wide text-white uppercase">
+            <h1 className="text-5xl md:text-6xl font-medium tracking-wide text-white uppercase">
               {restaurant.name}
             </h1>
           </div>
@@ -202,10 +202,10 @@ export default async function DashboardPage({
               <Link
                 key={item}
                 href={buildRangeHref(slug, item)}
-                className={`rounded-full px-8 py-2.5 text-xs uppercase tracking-widest font-medium transition-all ${
+                className={`rounded-full px-8 py-2.5 text-xs uppercase tracking-widest font-bold transition-all ${
                   item === range
                     ? "bg-[#E5D3B3] text-black shadow-[0_0_20px_rgba(229,211,179,0.2)]"
-                    : "text-white/50 hover:text-white hover:bg-white/5"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
               >
                 {item}
@@ -214,27 +214,27 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        {/* Master Card Rose Gold - Top Performer (LIMPO E SEM DUPLICIDADE) */}
-        <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 md:p-14 shadow-2xl relative overflow-hidden group">
+        {/* Master Card Rose Gold - Top Performer */}
+        <div className="rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 md:p-14 shadow-2xl relative overflow-hidden group">
           <div className="relative z-10 flex flex-col md:flex-row justify-between md:items-start gap-8">
             <div>
-              <span className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/50 font-medium">
-                <span className="w-2 h-2 rounded-full bg-[#E5D3B3] shadow-[0_0_10px_rgba(229,211,179,0.6)]"></span>
+              <span className="flex items-center gap-3 text-sm uppercase tracking-[0.2em] text-white/70 font-bold">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#E5D3B3] shadow-[0_0_10px_rgba(229,211,179,0.6)]"></span>
                 Top Performer
               </span>
 
-              <h2 className={`mt-5 text-5xl md:text-6xl font-light tracking-wide ${topPerformerName === "No data" ? "text-white/30" : "text-white uppercase"}`}>
+              <h2 className={`mt-5 text-6xl md:text-7xl font-medium tracking-wide ${topPerformerName === "No data" ? "text-white/40" : "text-white uppercase"}`}>
                 {topPerformerName}
               </h2>
 
-              <p className="mt-4 max-w-lg text-white/50 text-base font-light leading-relaxed">
+              <p className="mt-4 max-w-lg text-white/60 text-lg font-normal leading-relaxed">
                 Best overall performance combining app engagement and review generation.
               </p>
             </div>
 
             <div className="md:text-right">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-2">Performer Score</p>
-              <p className={`text-7xl md:text-8xl font-light tracking-tighter leading-none ${totalViews + totalReviews > 0 ? "text-[#E5D3B3]" : "text-white/20"}`}>
+              <p className="text-sm uppercase tracking-[0.2em] text-white/70 mb-2 font-bold">Performer Score</p>
+              <p className={`text-8xl md:text-9xl font-normal tracking-tighter leading-none ${totalViews + totalReviews > 0 ? "text-[#E5D3B3]" : "text-white/30"}`}>
                 {totalViews + totalReviews}
               </p>
             </div>
@@ -242,73 +242,73 @@ export default async function DashboardPage({
         </div>
 
         {/* Linha de Métricas Secundárias (TOTAL GERAL DA CASA) */}
-        <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] py-10 px-6 shadow-xl">
-          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0 text-center last:border-0">
+        <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] py-10 px-6 shadow-xl">
+          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/10 px-6 py-4 md:py-0 text-center last:border-0">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">App Views</p>
+              <p className="text-sm text-white/70 uppercase tracking-widest font-bold">App Views</p>
               <HelpTooltip text="Total number of visits to the restaurant app." />
             </div>
-            <p className={`text-3xl md:text-4xl font-light ${getStyle(totalViews)}`}>{totalViews}</p>
+            <p className={`text-4xl md:text-5xl font-medium ${getStyle(totalViews)}`}>{totalViews}</p>
           </div>
 
-          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0 text-center last:border-0">
+          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/10 px-6 py-4 md:py-0 text-center last:border-0">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">Review Clicks</p>
+              <p className="text-sm text-white/70 uppercase tracking-widest font-bold">Review Clicks</p>
               <HelpTooltip text="Total number of clicks on the review flow." />
             </div>
-            <p className={`text-3xl md:text-4xl font-light ${getStyle(totalReviews)}`}>{totalReviews}</p>
+            <p className={`text-4xl md:text-5xl font-medium ${getStyle(totalReviews)}`}>{totalReviews}</p>
           </div>
 
-          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0 text-center last:border-0">
+          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/10 px-6 py-4 md:py-0 text-center last:border-0">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">Conversion</p>
+              <p className="text-sm text-white/70 uppercase tracking-widest font-bold">Conversion</p>
               <HelpTooltip text="Percentage of app visits that turned into review clicks." />
             </div>
-            <p className={`text-3xl md:text-4xl font-light ${getStyle(overallConversionRate)}`}>{overallConversionRate}%</p>
+            <p className={`text-4xl md:text-5xl font-medium ${getStyle(overallConversionRate)}`}>{overallConversionRate}%</p>
           </div>
 
-          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0 text-center last:border-0">
+          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/10 px-6 py-4 md:py-0 text-center last:border-0">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">Active App</p>
+              <p className="text-sm text-white/70 uppercase tracking-widest font-bold">Active App</p>
               <HelpTooltip text="Servers with at least one app view in the selected period." />
             </div>
-            <p className={`text-3xl md:text-4xl font-light ${getStyle(activeAppServers)}`}>{activeAppServers}</p>
+            <p className={`text-4xl md:text-5xl font-medium ${getStyle(activeAppServers)}`}>{activeAppServers}</p>
           </div>
 
           <div className="flex-1 px-6 py-4 md:py-0 text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">Active Review</p>
+              <p className="text-sm text-white/70 uppercase tracking-widest font-bold">Active Review</p>
               <HelpTooltip text="Servers with at least one review click in the selected period." />
             </div>
-            <p className={`text-3xl md:text-4xl font-light ${getStyle(activeReviewServers)}`}>{activeReviewServers}</p>
+            <p className={`text-4xl md:text-5xl font-medium ${getStyle(activeReviewServers)}`}>{activeReviewServers}</p>
           </div>
         </div>
 
         {/* Rankings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pb-20">
-          <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 shadow-xl">
-            <div className="mb-10 flex items-center justify-between gap-4 border-b border-white/5 pb-6">
-              <p className="text-sm text-white/70 font-medium uppercase tracking-[0.2em]">App Ranking</p>
+          <div className="rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 shadow-xl">
+            <div className="mb-10 flex items-center justify-between gap-4 border-b border-white/10 pb-6">
+              <p className="text-base text-white/90 font-bold uppercase tracking-widest">App Ranking</p>
               <HelpTooltip text="Ranking of servers by app views generated." />
             </div>
 
             <div className="space-y-8">
               {appRanking.length === 0 ? (
-                <p className="text-base font-light text-white/30 text-center py-6">No data available.</p>
+                <p className="text-lg font-normal text-white/50 text-center py-6">No data available.</p>
               ) : (
                 appRanking.slice(0, 5).map((server, index) => (
                   <div key={server.id} className="relative">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-5">
-                        <span className="text-xs font-medium text-white/30 w-5">0{index + 1}</span>
-                        <span className="text-base text-white/90 font-light tracking-wide">{server.name}</span>
+                        <span className="text-sm font-bold text-white/50 w-5">0{index + 1}</span>
+                        <span className="text-lg text-white font-medium tracking-wide">{server.name}</span>
                       </div>
-                      <span className={`text-base font-normal ${getStyle(server.appViews)}`}>{server.appViews}</span>
+                      <span className={`text-xl font-bold ${getStyle(server.appViews)}`}>{server.appViews}</span>
                     </div>
-                    {/* Linha Fina de Progresso Dourada */}
-                    <div className="w-full h-[2px] bg-white/[0.03] rounded-full overflow-hidden">
+                    {/* Linha de Progresso */}
+                    <div className="w-full h-[3px] bg-white/10 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-[#E5D3B3]/40 to-[#E5D3B3] rounded-full transition-all duration-1000 ease-out"
+                        className="h-full bg-gradient-to-r from-[#E5D3B3]/60 to-[#E5D3B3] rounded-full transition-all duration-1000 ease-out"
                         style={{ width: `${(server.appViews / maxAppViews) * 100}%` }}
                       ></div>
                     </div>
@@ -318,29 +318,29 @@ export default async function DashboardPage({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 shadow-xl">
-            <div className="mb-10 flex items-center justify-between gap-4 border-b border-white/5 pb-6">
-              <p className="text-sm text-white/70 font-medium uppercase tracking-[0.2em]">Review Ranking</p>
+          <div className="rounded-3xl border border-white/10 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 shadow-xl">
+            <div className="mb-10 flex items-center justify-between gap-4 border-b border-white/10 pb-6">
+              <p className="text-base text-white/90 font-bold uppercase tracking-widest">Review Ranking</p>
               <HelpTooltip text="Ranking of servers by review clicks generated." />
             </div>
 
             <div className="space-y-8">
               {reviewRanking.length === 0 ? (
-                <p className="text-base font-light text-white/30 text-center py-6">No data available.</p>
+                <p className="text-lg font-normal text-white/50 text-center py-6">No data available.</p>
               ) : (
                 reviewRanking.slice(0, 5).map((server, index) => (
                   <div key={server.id} className="relative">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-5">
-                        <span className="text-xs font-medium text-white/30 w-5">0{index + 1}</span>
-                        <span className="text-base text-white/90 font-light tracking-wide">{server.name}</span>
+                        <span className="text-sm font-bold text-white/50 w-5">0{index + 1}</span>
+                        <span className="text-lg text-white font-medium tracking-wide">{server.name}</span>
                       </div>
-                      <span className={`text-base font-normal ${getStyle(server.reviewClicks)}`}>{server.reviewClicks}</span>
+                      <span className={`text-xl font-bold ${getStyle(server.reviewClicks)}`}>{server.reviewClicks}</span>
                     </div>
-                    {/* Linha Fina de Progresso Dourada */}
-                    <div className="w-full h-[2px] bg-white/[0.03] rounded-full overflow-hidden">
+                    {/* Linha de Progresso */}
+                    <div className="w-full h-[3px] bg-white/10 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-[#E5D3B3]/40 to-[#E5D3B3] rounded-full transition-all duration-1000 ease-out"
+                        className="h-full bg-gradient-to-r from-[#E5D3B3]/60 to-[#E5D3B3] rounded-full transition-all duration-1000 ease-out"
                         style={{ width: `${(server.reviewClicks / maxReviewClicks) * 100}%` }}
                       ></div>
                     </div>
