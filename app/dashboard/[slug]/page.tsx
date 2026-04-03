@@ -7,6 +7,29 @@ type PageProps = {
   searchParams: Promise<{ range?: string }>;
 };
 
+// Componente de Tooltip inteligente (se adapta ao fundo claro ou escuro)
+function HelpTooltip({ text, theme = "dark" }: { text: string; theme?: "dark" | "light" }) {
+  const isLight = theme === "light";
+  return (
+    <div className="relative group shrink-0">
+      <button
+        type="button"
+        className={`flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-medium transition-colors ${
+          isLight
+            ? "border-black/20 text-black/40 hover:border-black/50 hover:text-black"
+            : "border-white/20 text-white/40 hover:border-white/50 hover:text-white"
+        }`}
+      >
+        ?
+      </button>
+
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 hidden w-48 rounded-xl border border-white/10 bg-[#1a1a1a] p-3 text-[10px] tracking-wide font-normal leading-relaxed text-white/90 shadow-2xl group-hover:block">
+        {text}
+      </div>
+    </div>
+  );
+}
+
 function getRangeStart(range: string) {
   const now = new Date();
   const start = new Date(now);
@@ -87,7 +110,10 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
               </div>
               <span className="text-[9px] uppercase tracking-widest text-emerald-400 font-bold">Live Data</span>
             </div>
-            <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] mb-2 font-medium">App Experience Views</p>
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-medium">App Experience Views</p>
+              <HelpTooltip text="Total number of visits to the restaurant app." />
+            </div>
             <p className="text-5xl font-bold tracking-tight">{totalViews}</p>
           </div>
 
@@ -98,7 +124,10 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
                 <MousePointer2 className="w-5 h-5 text-white/70" />
               </div>
             </div>
-            <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] mb-2 font-medium">Google Review Clicks</p>
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-medium">Google Review Clicks</p>
+              <HelpTooltip text="Total number of clicks on the review flow." />
+            </div>
             <p className="text-5xl font-bold tracking-tight">{totalReviews}</p>
           </div>
 
@@ -109,7 +138,10 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
                 <BarChart3 className="w-5 h-5 text-black/70" />
               </div>
             </div>
-            <p className="text-[10px] text-black/40 uppercase tracking-[0.2em] mb-2 font-medium">Conversion Rate</p>
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-[10px] text-black/40 uppercase tracking-[0.2em] font-medium">Conversion Rate</p>
+              <HelpTooltip text="Percentage of app visits that turned into review clicks." theme="light" />
+            </div>
             <p className="text-5xl font-bold tracking-tight text-black">{ctr}%</p>
           </div>
 
@@ -117,7 +149,10 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
 
         {/* TEAM PERFORMANCE */}
         <div>
-          <h2 className="text-xl font-normal text-white mb-6">Team Performance</h2>
+          <div className="flex items-center gap-2 mb-6">
+            <h2 className="text-xl font-normal text-white">Team Performance</h2>
+            <HelpTooltip text="Performance ranking for all active servers." />
+          </div>
           
           <div className="space-y-4">
             {teamPerformance.length === 0 ? (
