@@ -1,27 +1,11 @@
 import Link from "next/link";
 import { supabase } from "../../../lib/supabase";
+import { Zap, LayoutGrid, MousePointer2, BarChart3 } from "lucide-react";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ range?: string }>;
 };
-
-// Tooltip brutalista e clean (Branco/Preto)
-function HelpTooltip({ text }: { text: string }) {
-  return (
-    <div className="relative group shrink-0">
-      <button
-        type="button"
-        className="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-transparent text-[10px] text-white/50 transition hover:border-white hover:text-white"
-      >
-        ?
-      </button>
-      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 top-10 z-50 hidden w-72 rounded-lg border border-white/10 bg-[#000000] p-5 text-sm font-light leading-relaxed text-white/90 shadow-3xl group-hover:block backdrop-blur-3xl">
-        {text}
-      </div>
-    </div>
-  );
-}
 
 function getRangeStart(range: string) {
   const now = new Date();
@@ -43,128 +27,132 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
   const { data: restaurant } = await supabase.from("restaurants").select("id, name").eq("slug", slug).single();
 
   if (!restaurant) {
-    return <main className="min-h-screen bg-black text-white flex items-center justify-center uppercase tracking-[0.5em] font-light font-sans">Location Not Found</main>;
+    return <main className="min-h-screen bg-[#050505] text-white flex items-center justify-center font-sans">Location Not Found</main>;
   }
 
+  // Busca de Dados
   const { count: appViewsCount } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("restaurant_id", restaurant.id).eq("event_type", "app_view").gte("created_at", rangeStart);
   const { count: reviewClicksCount } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("restaurant_id", restaurant.id).eq("event_type", "review_click").gte("created_at", rangeStart);
 
   const totalViews = appViewsCount ?? 0;
   const totalReviews = reviewClicksCount ?? 0;
-  const ctr = totalViews > 0 ? ((totalReviews / totalViews) * 100).toFixed(1) : "0.0";
+  const ctr = totalViews > 0 ? ((totalReviews / totalViews) * 100).toFixed(1) : "0";
 
-  const { data: servers } = await supabase.from("servers").select("id, name").eq("restaurant_id", restaurant.id);
+  // Busca da Equipe
+  const { data: servers } = await supabase.from("servers").select("id, name, code").eq("restaurant_id", restaurant.id);
   const { data: appEvents } = await supabase.from("events").select("server_id").eq("restaurant_id", restaurant.id).eq("event_type", "app_view").gte("created_at", rangeStart).not("server_id", "is", null);
   const { data: reviewEvents } = await supabase.from("events").select("server_id").eq("restaurant_id", restaurant.id).eq("event_type", "review_click").gte("created_at", rangeStart).not("server_id", "is", null);
 
-  const appRanking = (servers ?? []).map(s => ({
-    name: s.name,
-    count: appEvents?.filter(e => e.server_id === s.id).length || 0
-  })).sort((a, b) => b.count - a.count);
-
-  const reviewRanking = (servers ?? []).map(s => ({
-    name: s.name,
-    count: reviewEvents?.filter(e => e.server_id === s.id).length || 0
-  })).sort((a, b) => b.count - a.count);
-
-  const topPerformer = reviewRanking[0]?.count > 0 || appRanking[0]?.count > 0 
-    ? (reviewRanking[0].count >= appRanking[0].count ? reviewRanking[0].name : appRanking[0].name) 
-    : "NO DATA";
+  // Montando a lista de Performance da Equipe
+  const teamPerformance = (servers ?? []).map(server => {
+    const views = appEvents?.filter(e => e.server_id === server.id).length || 0;
+    const reviews = reviewEvents?.filter(e => e.server_id === server.id).length || 0;
+    return { ...server, views, reviews };
+  }).sort((a, b) => (b.views + b.reviews) - (a.views + a.reviews));
 
   return (
-    <main className="min-h-screen bg-black text-white p-8 md:p-16 font-sans selection:bg-white selection:text-black relative overflow-hidden">
-      
-      {/* TEXTURA FUNDO: O MESMO DO LOGIN */}
-      <div className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1544025162-8315ea07f239?q=80&w=2000&auto=format&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
-
-      <div className="max-w-[1400px] mx-auto space-y-24 relative z-10">
+    <main className="min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans selection:bg-white selection:text-black">
+      <div className="max-w-[1200px] mx-auto">
         
-        {/* HEADER: ESTILO EDITORIAL BALENCIAGA (LIMPO) */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 border-b border-white/10 pb-12">
-          <div>
-            <p className="text-[10px] tracking-[0.5em] text-white/30 uppercase font-light mb-4">Chef Experience Intelligence</p>
-            <h1 className="text-6xl md:text-8xl font-black tracking-tight uppercase leading-[0.85]">{restaurant.name}</h1>
+        {/* HEADER */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shrink-0">
+              <Zap className="w-6 h-6 text-black fill-black" />
+            </div>
+            <div>
+              <p className="text-[10px] text-white/40 tracking-[0.2em] uppercase font-medium mb-1">Chef Experience</p>
+              <h1 className="text-2xl font-medium text-white">{restaurant.name}</h1>
+            </div>
           </div>
           
-          <nav className="flex items-center gap-1 border-b border-white/10 pb-3">
+          <nav className="flex items-center gap-1 bg-[#0A0A0A] border border-white/10 rounded-full p-1">
             {["day", "week", "month", "year"].map(r => (
               <Link key={r} href={`/dashboard/${slug}?range=${r}`} 
-                className={`px-5 py-1.5 text-[10px] uppercase tracking-[0.3em] font-medium transition-all ${range === r ? "text-white font-bold border-b border-white" : "text-white/20 hover:text-white"}`}>
+                className={`px-5 py-2 text-[10px] uppercase tracking-[0.1em] font-medium rounded-full transition-colors ${range === r ? "bg-white text-black" : "text-white/40 hover:text-white"}`}>
                 {r}
               </Link>
             ))}
           </nav>
         </header>
 
-        {/* HERO SECTION: DE-BOXED, MONOCROMÁTICO E BRUTALISTA */}
-        <section className="relative p-12 md:p-20 overflow-hidden border border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent rounded-2xl group">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 blur-[100px] rounded-full -mr-20 -mt-20 transition-colors group-hover:bg-white/10"></div>
+        {/* CARDS DE MÉTRICAS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
           
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-16">
-            <div className="space-y-8">
-              <div className="flex items-center gap-4">
-                <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-                <span className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-medium">Top Performer</span>
+          {/* Card 1: App Views */}
+          <div className="bg-[#0A0A0A] border border-white/5 rounded-[2rem] p-8 shadow-lg">
+            <div className="flex justify-between items-start mb-8">
+              <div className="bg-white/5 p-3 rounded-2xl">
+                <LayoutGrid className="w-5 h-5 text-white/70" />
               </div>
-              <h2 className="text-8xl md:text-[10rem] font-black tracking-tighter uppercase leading-[0.8]">{topPerformer}</h2>
-              <p className="text-white/30 text-base font-light tracking-wide max-w-xl italic">LÍDER ABSOLUTO DE PERFORMANCE E ENGAJAMENTO DIGITAL NESTA UNIDADE</p>
+              <span className="text-[9px] uppercase tracking-widest text-emerald-400 font-bold">Live Data</span>
             </div>
-            <div className="text-left md:text-right">
-              <p className="text-white/20 text-[10px] uppercase tracking-[0.5em] mb-4">Total Score</p>
-              <p className="text-9xl md:text-[13rem] font-bold leading-none tracking-tighter text-white">{totalViews + totalReviews}</p>
-            </div>
+            <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] mb-2 font-medium">App Experience Views</p>
+            <p className="text-5xl font-bold tracking-tight">{totalViews}</p>
           </div>
-        </section>
 
-        {/* STATS: GRID MINIMALISTA SEM CAIXAS (PRETO E BRANCO) */}
-        <div className="grid grid-cols-2 md:grid-cols-5 border-t border-b border-white/10 divide-x divide-white/5">
-          {[
-            { label: "App Views", val: totalViews, tt: "Visitas totais ao menu digital." },
-            { label: "Review Clicks", val: totalReviews, tt: "Cliques no fluxo de avaliação." },
-            { label: "Conversion", val: `${ctr}%`, tt: "Eficiência total da casa." },
-            { label: "Active App", val: appRanking.filter(s => s.count > 0).length, tt: "Servers ativos no menu." },
-            { label: "Active Review", val: reviewRanking.filter(s => s.count > 0).length, tt: "Servers ativos em reviews." }
-          ].map((m, i) => (
-            <div key={i} className="py-16 px-6 flex flex-col items-center justify-center space-y-6 text-center hover:bg-white/[0.01] transition-colors">
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">{m.label}</span>
-                <HelpTooltip text={m.tt} />
+          {/* Card 2: Review Clicks */}
+          <div className="bg-[#0A0A0A] border border-white/5 rounded-[2rem] p-8 shadow-lg">
+            <div className="flex justify-between items-start mb-8">
+              <div className="bg-white/5 p-3 rounded-2xl">
+                <MousePointer2 className="w-5 h-5 text-white/70" />
               </div>
-              {/* Números brancos com hierarquia de opacidade */}
-              <p className={`text-6xl md:text-7xl font-bold tracking-tighter ${m.val === 0 || m.val === "0.0%" ? "text-white/10" : "text-white"}`}>{m.val}</p>
             </div>
-          ))}
+            <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] mb-2 font-medium">Google Review Clicks</p>
+            <p className="text-5xl font-bold tracking-tight">{totalReviews}</p>
+          </div>
+
+          {/* Card 3: Conversion Rate (Branco) */}
+          <div className="bg-white rounded-[2rem] p-8 shadow-lg">
+            <div className="flex justify-between items-start mb-8">
+              <div className="bg-black/5 p-3 rounded-2xl">
+                <BarChart3 className="w-5 h-5 text-black/70" />
+              </div>
+            </div>
+            <p className="text-[10px] text-black/40 uppercase tracking-[0.2em] mb-2 font-medium">Conversion Rate</p>
+            <p className="text-5xl font-bold tracking-tight text-black">{ctr}%</p>
+          </div>
+
         </div>
 
-        {/* RANKINGS: ESTILO EDITORIAL MONOCROMÁTICO (LIMPO) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
-          {[
-            { title: "App Engagement Ranking", data: appRanking },
-            { title: "Review Generation Ranking", data: reviewRanking }
-          ].map((rank, i) => (
-            <div key={i} className="space-y-12">
-              {/* Título editorial do ranking (Fosco/Gray) */}
-              <h3 className="text-white/20 text-[10px] uppercase tracking-[0.5em] font-bold border-b border-white/10 pb-6 italic">{rank.title}</h3>
-              <div className="space-y-8">
-                {rank.data.slice(0, 5).map((s, idx) => (
-                  <div key={idx} className="flex justify-between items-end mb-4 group border-b border-white/5 pb-4">
-                    <span className="text-xl font-light tracking-tight text-white/60 group-hover:text-white transition-colors uppercase">
-                      {/* Número do ranking cinza (Fosco) */}
-                      <span className="text-white/20 mr-4 font-mono text-xs">0{idx + 1}</span>{s.name}
-                    </span>
-                    {/* Dados em Branco Puro e Linhas finas brancas */}
-                    <span className={`text-3xl font-bold tracking-tighter ${s.count > 0 ? "text-white" : "text-white/10"}`}>{s.count}</span>
+        {/* TEAM PERFORMANCE */}
+        <div>
+          <h2 className="text-xl font-normal text-white mb-6">Team Performance</h2>
+          
+          <div className="space-y-4">
+            {teamPerformance.length === 0 ? (
+              <p className="text-sm text-white/40 py-4">Nenhum dado registrado neste período.</p>
+            ) : (
+              teamPerformance.map((server) => (
+                <div key={server.id} className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-colors hover:bg-[#111]">
+                  
+                  <div className="flex items-center gap-5">
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white font-medium text-lg border border-white/5 shrink-0">
+                      {server.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-lg font-medium text-white">{server.name}</p>
+                      <p className="text-[10px] text-white/30 uppercase tracking-widest mt-1">ID: {server.code || server.id.slice(0,4)}</p>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
+
+                  <div className="flex gap-12 w-full md:w-auto justify-between md:justify-end">
+                    <div className="text-right">
+                      <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] mb-1 font-medium">Views</p>
+                      <p className="text-2xl font-bold">{server.views}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] mb-1 font-medium">Reviews</p>
+                      <p className="text-2xl font-bold">{server.reviews}</p>
+                    </div>
+                  </div>
+
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
-        <footer className="pt-16 opacity-10 flex justify-between items-center text-[8px] uppercase tracking-[0.5em] font-light text-center border-t border-white/5">
-          <p>© 2026 LOOPING MEDIA INTELLIGENCE</p>
-          <p>CHEF EXPERIENCE PLATFORM</p>
-        </footer>
       </div>
     </main>
   );
