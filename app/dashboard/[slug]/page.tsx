@@ -6,6 +6,7 @@ type PageProps = {
   searchParams: Promise<{ range?: string }>;
 };
 
+// Tooltip brutalista e clean (Branco/Preto)
 function HelpTooltip({ text }: { text: string }) {
   return (
     <div className="relative group shrink-0">
@@ -73,12 +74,12 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
   return (
     <main className="min-h-screen bg-black text-white p-8 md:p-16 font-sans selection:bg-white selection:text-black relative overflow-hidden">
       
-      {/* TEXTURA FUNDO: MESMA DO LOGIN */}
+      {/* TEXTURA FUNDO: O MESMO DO LOGIN */}
       <div className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1544025162-8315ea07f239?q=80&w=2000&auto=format&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
 
       <div className="max-w-[1400px] mx-auto space-y-24 relative z-10">
         
-        {/* HEADER: ESTILO EDITORIAL BALENCIAGA (GIGANTE, BLACK, TIGHT) */}
+        {/* HEADER: ESTILO EDITORIAL BALENCIAGA (LIMPO) */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 border-b border-white/10 pb-12">
           <div>
             <p className="text-[10px] tracking-[0.5em] text-white/30 uppercase font-light mb-4">Chef Experience Intelligence</p>
@@ -95,9 +96,9 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
           </nav>
         </header>
 
-        {/* HERO SECTION: DE-BOXED, BRUTALISTA (SEM CAIXA, SÓ TIPOGRAFIA) */}
-        <section className="relative p-12 md:p-20 overflow-hidden group">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 blur-[100px] rounded-full -mr-20 -mt-20 group-hover:bg-white/10"></div>
+        {/* HERO SECTION: DE-BOXED, MONOCROMÁTICO E BRUTALISTA */}
+        <section className="relative p-12 md:p-20 overflow-hidden border border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent rounded-2xl group">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 blur-[100px] rounded-full -mr-20 -mt-20 transition-colors group-hover:bg-white/10"></div>
           
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-16">
             <div className="space-y-8">
@@ -105,7 +106,7 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
                 <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
                 <span className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-medium">Top Performer</span>
               </div>
-              <h2 className="text-8xl md:text-[10rem] font-black tracking-tighter uppercase leading-[0.8] text-white">{topPerformer}</h2>
+              <h2 className="text-8xl md:text-[10rem] font-black tracking-tighter uppercase leading-[0.8]">{topPerformer}</h2>
               <p className="text-white/30 text-base font-light tracking-wide max-w-xl italic">LÍDER ABSOLUTO DE PERFORMANCE E ENGAJAMENTO DIGITAL NESTA UNIDADE</p>
             </div>
             <div className="text-left md:text-right">
@@ -115,7 +116,7 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
           </div>
         </section>
 
-        {/* STATS: GRID MINIMALISTA SEM CAIXAS (SÓ LINHAS FINAS) */}
+        {/* STATS: GRID MINIMALISTA SEM CAIXAS (PRETO E BRANCO) */}
         <div className="grid grid-cols-2 md:grid-cols-5 border-t border-b border-white/10 divide-x divide-white/5">
           {[
             { label: "App Views", val: totalViews, tt: "Visitas totais ao menu digital." },
@@ -129,26 +130,30 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
                 <span className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">{m.label}</span>
                 <HelpTooltip text={m.tt} />
               </div>
+              {/* Números brancos com hierarquia de opacidade */}
               <p className={`text-6xl md:text-7xl font-bold tracking-tighter ${m.val === 0 || m.val === "0.0%" ? "text-white/10" : "text-white"}`}>{m.val}</p>
             </div>
           ))}
         </div>
 
-        {/* RANKINGS: ESTILO EDITORIAL (LIMPO, SEM BARRAS GORDAS) */}
+        {/* RANKINGS: ESTILO EDITORIAL MONOCROMÁTICO (LIMPO) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
           {[
             { title: "App Engagement Ranking", data: appRanking },
             { title: "Review Generation Ranking", data: reviewRanking }
           ].map((rank, i) => (
             <div key={i} className="space-y-12">
+              {/* Título editorial do ranking (Fosco/Gray) */}
               <h3 className="text-white/20 text-[10px] uppercase tracking-[0.5em] font-bold border-b border-white/10 pb-6 italic">{rank.title}</h3>
               <div className="space-y-8">
                 {rank.data.slice(0, 5).map((s, idx) => (
-                  <div key={idx} className="flex justify-between items-end border-b border-white/5 pb-4 group">
+                  <div key={idx} className="flex justify-between items-end mb-4 group border-b border-white/5 pb-4">
                     <span className="text-xl font-light tracking-tight text-white/60 group-hover:text-white transition-colors uppercase">
+                      {/* Número do ranking cinza (Fosco) */}
                       <span className="text-white/20 mr-4 font-mono text-xs">0{idx + 1}</span>{s.name}
                     </span>
-                    <span className="text-3xl font-bold text-white tracking-tighter">{s.count}</span>
+                    {/* Dados em Branco Puro e Linhas finas brancas */}
+                    <span className={`text-3xl font-bold tracking-tighter ${s.count > 0 ? "text-white" : "text-white/10"}`}>{s.count}</span>
                   </div>
                 ))}
               </div>
@@ -156,7 +161,7 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
           ))}
         </div>
 
-        <footer className="pt-20 opacity-10 flex justify-between items-center text-[8px] uppercase tracking-[0.5em] font-light text-center border-t border-white/5">
+        <footer className="pt-16 opacity-10 flex justify-between items-center text-[8px] uppercase tracking-[0.5em] font-light text-center border-t border-white/5">
           <p>© 2026 LOOPING MEDIA INTELLIGENCE</p>
           <p>CHEF EXPERIENCE PLATFORM</p>
         </footer>
