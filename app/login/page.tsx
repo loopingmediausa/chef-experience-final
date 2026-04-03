@@ -27,14 +27,28 @@ export default function LoginPage() {
         return;
       }
 
-      // Se o login der certo, redireciona para o painel admin
-      router.push("/admin"); 
-    } catch (err) {
-      setError("An unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
+      // No momento do sucesso do login:
+const { data: { user } } = await supabase.auth.getUser();
+
+// Se for o seu e-mail de admin da Looping
+if (user?.email === "seu-email-da-looping@gmail.com") {
+  router.push("/admin");
+} else {
+  // Se for qualquer outro (o cliente), manda direto para o dashboard dele
+  // Vamos precisar buscar o slug dele rapidinho
+  const { data: restaurant } = await supabase
+    .from('restaurants')
+    .select('slug')
+    .eq('owner_id', user?.id)
+    .single();
+
+  if (restaurant) {
+    router.push(`/dashboard/${restaurant.slug}`);
+  } else {
+    // Caso de erro: usuário sem restaurante vinculado
+    router.push("/login");
   }
+}
 
   return (
     <main className="min-h-screen bg-black text-white flex font-sans selection:bg-white selection:text-black relative overflow-hidden">
