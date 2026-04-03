@@ -1,408 +1,172 @@
-"use client";
+import Link from "next/link";
+import { supabase } from "../../../lib/supabase";
 
-import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabase";
-
-type Restaurant = {
-  id: string;
-  name: string;
-  slug: string;
-  review_url?: string | null;
+type PageProps = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ range?: string }>;
 };
 
-type Server = {
-  id: string;
-  name: string;
-  code: string;
-  restaurant_id: string;
-  restaurants?: {
-    slug: string;
-    name: string;
-  } | null;
-};
+// Tooltip refinado com a mesma lógica do Admin
+function HelpTooltip({ text }: { text: string }) {
+  return (
+    <div className="relative group shrink-0">
+      <button
+        type="button"
+        className="flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-transparent text-[9px] text-white/30 transition hover:border-[#E5D3B3]/50 hover:text-[#E5D3B3]"
+      >
+        ?
+      </button>
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 top-8 z-50 hidden w-64 rounded-xl border border-white/10 bg-[#0a0a0a]/95 p-4 text-[11px] font-light leading-relaxed text-white/70 shadow-2xl group-hover:block backdrop-blur-xl">
+        {text}
+      </div>
+    </div>
+  );
+}
 
-export default function AdminPage() {
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [servers, setServers] = useState<Server[]>([]);
+function getRangeStart(range: string) {
+  const now = new Date();
+  const start = new Date(now);
+  if (range === "day") start.setHours(0, 0, 0, 0);
+  else if (range === "week") start.setDate(start.getDate() - 7);
+  else if (range === "month") start.setDate(start.getDate() - 30);
+  else if (range === "year") start.setDate(start.getDate() - 365);
+  else start.setDate(start.getDate() - 7);
+  return start.toISOString();
+}
 
-  const [restaurantName, setRestaurantName] = useState("");
-  const [restaurantSlug, setRestaurantSlug] = useState("");
-  const [restaurantReviewUrl, setRestaurantReviewUrl] = useState("");
+export default async function DashboardPage({ params, searchParams }: PageProps) {
+  const { slug } = await params;
+  const resParams = await searchParams;
+  const range = resParams.range || "week";
+  const rangeStart = getRangeStart(range);
 
-  const [serverName, setServerName] = useState("");
-  const [serverCode, setServerCode] = useState("");
-  const [serverRestaurantId, setServerRestaurantId] = useState("");
+  const { data: restaurant } = await supabase.from("restaurants").select("id, name").eq("slug", slug).single();
 
-  const [loadingRestaurant, setLoadingRestaurant] = useState(false);
-  const [loadingServer, setLoadingServer] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [origin, setOrigin] = useState("");
-
-  const router = useRouter();
-
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/login");
+  if (!restaurant) {
+    return (
+      <main className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <p className="text-[10px] uppercase tracking-[0.5em] text-white/20 font-light font-sans">Location Not Found</p>
+      </main>
+    );
   }
 
-  async function loadData() {
-    const restaurantsRes = await fetch("/api/restaurants");
-    const restaurantsData = await restaurantsRes.json();
-    setRestaurants(Array.isArray(restaurantsData) ? restaurantsData : []);
+  // BUSCA DE DADOS (COLUNA event_type - PADRÃO SANTO GRAAL)
+  const { count: appViewsCount } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("restaurant_id", restaurant.id).eq("event_type", "app_view").gte("created_at", rangeStart);
+  const { count: reviewClicksCount } = await supabase.from("events").select("*", { count: "exact", head: true }).eq("restaurant_id", restaurant.id).eq("event_type", "review_click").gte("created_at", rangeStart);
 
-    const serversRes = await fetch("/api/servers");
-    const serversData = await serversRes.json();
-    setServers(Array.isArray(serversData) ? serversData : []);
-  }
+  const totalViews = appViewsCount ?? 0;
+  const totalReviews = reviewClicksCount ?? 0;
+  const ctr = totalViews > 0 ? ((totalReviews / totalViews) * 100).toFixed(1) : "0.0";
 
-  useEffect(() => {
-    loadData();
-    // Captura o domínio atual para gerar os links corretamente
-    setOrigin(window.location.origin);
-  }, []);
+  const { data: servers } = await supabase.from("servers").select("id, name").eq("restaurant_id", restaurant.id);
+  const { data: appEvents } = await supabase.from("events").select("server_id").eq("restaurant_id", restaurant.id).eq("event_type", "app_view").gte("created_at", rangeStart).not("server_id", "is", null);
+  const { data: reviewEvents } = await supabase.from("events").select("server_id").eq("restaurant_id", restaurant.id).eq("event_type", "review_click").gte("created_at", rangeStart).not("server_id", "is", null);
 
-  async function handleCreateRestaurant(e: FormEvent) {
-    e.preventDefault();
-    setLoadingRestaurant(true);
+  const appRanking = (servers ?? []).map(s => ({
+    name: s.name,
+    count: appEvents?.filter(e => e.server_id === s.id).length || 0
+  })).sort((a, b) => b.count - a.count);
 
-    try {
-      const res = await fetch("/api/restaurants", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: restaurantName,
-          slug: restaurantSlug,
-          review_url: restaurantReviewUrl,
-        }),
-      });
+  const reviewRanking = (servers ?? []).map(s => ({
+    name: s.name,
+    count: reviewEvents?.filter(e => e.server_id === s.id).length || 0
+  })).sort((a, b) => b.count - a.count);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "Erro ao criar restaurante");
-        return;
-      }
-
-      setRestaurantName("");
-      setRestaurantSlug("");
-      setRestaurantReviewUrl("");
-      await loadData();
-    } catch {
-      alert("Erro inesperado ao criar restaurante");
-    } finally {
-      setLoadingRestaurant(false);
-    }
-  }
-
-  async function handleCreateServer(e: FormEvent) {
-    e.preventDefault();
-    setLoadingServer(true);
-
-    try {
-      const res = await fetch("/api/servers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: serverName,
-          code: serverCode,
-          restaurant_id: serverRestaurantId,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "Erro ao criar server");
-        return;
-      }
-
-      setServerName("");
-      setServerCode("");
-      setServerRestaurantId("");
-      await loadData();
-    } catch {
-      alert("Erro inesperado ao criar server");
-    } finally {
-      setLoadingServer(false);
-    }
-  }
+  const topPerformer = reviewRanking[0]?.count > 0 || appRanking[0]?.count > 0 
+    ? (reviewRanking[0].count >= appRanking[0].count ? reviewRanking[0].name : appRanking[0].name) 
+    : "NO DATA";
 
   return (
-    <main className="min-h-screen bg-[#050505] text-[#f8f9fa] p-6 md:p-10 font-sans selection:bg-white selection:text-black relative overflow-hidden">
-      
-      <div 
-        className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1544025162-8315ea07f239?q=80&w=2000&auto=format&fit=crop')`, 
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      ></div>
+    <main className="min-h-screen bg-[#050505] text-[#f8f9fa] p-8 md:p-16 font-sans selection:bg-[#E5D3B3] selection:text-black relative overflow-hidden">
+      {/* TEXTURA IGUAL AO ADMIN */}
+      <div className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1544025162-8315ea07f239?q=80&w=2000&auto=format&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
 
-      <div className="max-w-[1500px] mx-auto relative z-10 space-y-10">
+      <div className="max-w-[1500px] mx-auto space-y-16 relative z-10">
         
-        <div className="flex items-start justify-between mb-8 border-b border-white/10 pb-8">
+        {/* HEADER: MESMA ESTRUTURA DO ADMIN */}
+        <div className="flex flex-col md:flex-row justify-between md:items-end gap-10 border-b border-white/10 pb-10">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50 font-light mb-3">
-              Looping Media
-            </p>
-            <h1 className="text-4xl md:text-5xl font-light tracking-wide text-white">
-              Chef Experience Admin
-            </h1>
+            <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-light mb-3 italic">Chef Experience Intelligence</p>
+            <h1 className="text-5xl md:text-6xl font-light tracking-tight text-white uppercase">{restaurant.name}</h1>
           </div>
           
-          <button 
-            onClick={handleLogout}
-            className="text-xs uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors border-b border-transparent hover:border-white pb-1 mt-2"
-          >
-            Sign Out
-          </button>
+          <nav className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] p-1 shadow-inner backdrop-blur-sm">
+            {["day", "week", "month", "year"].map(r => (
+              <Link key={r} href={`/dashboard/${slug}?range=${r}`} className={`rounded-full px-6 py-2 text-[10px] uppercase tracking-[0.2em] font-medium transition-all ${range === r ? "bg-[#E5D3B3] text-black shadow-[0_0_15px_rgba(229,211,179,0.2)]" : "text-white/40 hover:text-white"}`}>
+                {r}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12">
-          <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 shadow-2xl">
-            <h2 className="text-2xl font-light tracking-wide text-white/90 mb-8 flex items-center gap-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E5D3B3] shadow-[0_0_8px_rgba(229,211,179,0.5)]"></span> New Restaurant
-            </h2>
-
-            <form onSubmit={handleCreateRestaurant} className="space-y-6">
-              <input
-                value={restaurantName}
-                onChange={(e) => setRestaurantName(e.target.value)}
-                placeholder="Restaurant name"
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
-              />
-              <input
-                value={restaurantSlug}
-                onChange={(e) => setRestaurantSlug(e.target.value)}
-                placeholder="slug-example"
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
-              />
-              <input
-                value={restaurantReviewUrl}
-                onChange={(e) => setRestaurantReviewUrl(e.target.value)}
-                placeholder="Google review URL"
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
-              />
-              <button
-                type="submit"
-                disabled={loadingRestaurant}
-                className="w-full bg-white/90 text-black py-4 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-white transition-colors disabled:opacity-50 mt-2 rounded-lg"
-              >
-                {loadingRestaurant ? "Creating..." : "Create Restaurant"}
-              </button>
-            </form>
-          </div>
-
-          <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 shadow-2xl">
-            <h2 className="text-2xl font-light tracking-wide text-white/90 mb-8 flex items-center gap-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E5D3B3] shadow-[0_0_8px_rgba(229,211,179,0.5)]"></span> New Server
-            </h2>
-            <form onSubmit={handleCreateServer} className="space-y-6">
-              <input
-                value={serverName}
-                onChange={(e) => setServerName(e.target.value)}
-                placeholder="Server name"
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
-              />
-              <input
-                value={serverCode}
-                onChange={(e) => setServerCode(e.target.value)}
-                placeholder="Server code (e.g., 001)"
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
-              />
-              <select
-                value={serverRestaurantId}
-                onChange={(e) => setServerRestaurantId(e.target.value)}
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white focus:border-white/30 transition-all text-base font-light outline-none appearance-none"
-              >
-                <option value="" className="bg-[#0a0a0a] text-white/50">Select restaurant...</option>
-                {restaurants.map((restaurant) => (
-                  <option key={restaurant.id} value={restaurant.id} className="bg-[#0a0a0a] text-white">
-                    {restaurant.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={loadingServer}
-                className="w-full bg-[#E5D3B3] text-black py-4 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-[#f4e2c2] transition-colors disabled:opacity-50 mt-2 rounded-lg"
-              >
-                {loadingServer ? "Creating..." : "Create Server"}
-              </button>
-            </form>
+        {/* TOP PERFORMER: ESTILO BLACK CARD (FINO E ELEGANTE) */}
+        <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-12 md:p-16 shadow-2xl group transition-all hover:border-white/10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
+            <div className="space-y-6">
+              <span className="flex items-center gap-3 text-[10px] uppercase tracking-[0.4em] text-[#E5D3B3] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E5D3B3] shadow-[0_0_8px_rgba(229,211,179,0.6)]"></span>
+                Top Performer
+              </span>
+              <h2 className="text-6xl md:text-8xl font-light tracking-tighter uppercase leading-none text-white">{topPerformer}</h2>
+              <p className="text-white/30 text-base font-light tracking-wide max-w-md italic">Líder absoluto de performance e engajamento digital nesta unidade.</p>
+            </div>
+            <div className="text-left md:text-right">
+              <p className="text-white/20 text-[10px] uppercase tracking-[0.4em] mb-4">Total Unit Score</p>
+              <p className="text-8xl md:text-[10rem] font-light leading-none tracking-tighter text-white">{totalViews + totalReviews}</p>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          
-          <div className="lg:col-span-4 rounded-3xl border border-white/5 bg-[#0a0a0a] p-10 shadow-2xl">
-            <h2 className="text-sm uppercase tracking-[0.2em] text-white/50 mb-8">Registered Locations</h2>
+        {/* METRICS ROW: LIMPO E LEGÍVEL */}
+        <div className="grid grid-cols-2 md:grid-cols-5 border border-white/5 rounded-3xl bg-white/[0.01] divide-x divide-white/5 overflow-hidden">
+          {[
+            { label: "App Views", val: totalViews, tt: "Visitas totais ao menu digital." },
+            { label: "Review Clicks", val: totalReviews, tt: "Cliques no fluxo de avaliação." },
+            { label: "Conversion", val: `${ctr}%`, tt: "Eficiência total da casa." },
+            { label: "Active App", val: appRanking.filter(s => s.count > 0).length, tt: "Servers ativos no menu." },
+            { label: "Active Review", val: reviewRanking.filter(s => s.count > 0).length, tt: "Servers ativos em reviews." }
+          ].map((m, i) => (
+            <div key={i} className="py-12 px-6 flex flex-col items-center justify-center space-y-6 group hover:bg-white/[0.02] transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">{m.label}</span>
+                <HelpTooltip text={m.tt} />
+              </div>
+              <p className={`text-4xl md:text-5xl font-light tracking-tighter ${m.val === 0 || m.val === "0.0%" ? "text-white/10" : "text-white"}`}>{m.val}</p>
+            </div>
+          ))}
+        </div>
 
-            <div className="max-h-[700px] overflow-y-auto pr-3 space-y-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent]">
-              {restaurants.map((restaurant) => (
-                <div
-                  key={restaurant.id}
-                  className="rounded-2xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#141414] to-[#0a0a0a] p-6 hover:border-white/20 transition-all"
-                >
-                  <p className="text-lg font-light text-white/90 tracking-wide">{restaurant.name}</p>
-                  
-                  <div className="mt-4 space-y-3">
-                    <p className="text-sm text-white/40 flex justify-between">
-                      <span>Slug:</span> 
-                      <span className="text-white/70">{restaurant.slug}</span>
-                    </p>
-                    <p className="text-sm text-white/40 flex justify-between items-center">
-                      <span>Review URL:</span>
-                      <span className={`text-[10px] uppercase tracking-widest px-3 py-1.5 border rounded-md font-medium ${restaurant.review_url ? "border-[#E5D3B3]/30 text-[#E5D3B3] bg-[#E5D3B3]/5" : "border-white/10 text-white/40"}`}>
-                        {restaurant.review_url ? "Active" : "Pending"}
+        {/* RANKINGS: ESTILO EDITORIAL (LIMPO) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+          {[
+            { title: "App Engagement Ranking", data: appRanking },
+            { title: "Review Generation Ranking", data: reviewRanking }
+          ].map((rank, i) => (
+            <div key={i} className="space-y-10">
+              <h3 className="text-white/20 text-[10px] uppercase tracking-[0.5em] font-bold border-b border-white/10 pb-6 italic">{rank.title}</h3>
+              <div className="space-y-8">
+                {rank.data.slice(0, 5).map((s, idx) => (
+                  <div key={idx} className="group">
+                    <div className="flex justify-between items-end mb-4 font-light uppercase">
+                      <span className="text-lg tracking-tight text-white/60 group-hover:text-white transition-colors">
+                        <span className="text-white/20 mr-4 font-mono text-xs">0{idx + 1}</span>{s.name}
                       </span>
-                    </p>
-                  </div>
-
-                  {/* BLOCO DE ACESSO AO DASHBOARD - NOVO */}
-                  <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-medium">
-                      Access Dashboard
-                    </p>
-                    <div className="group relative flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 transition-all hover:border-[#E5D3B3]/30">
-                      <code className="text-[10px] text-[#E5D3B3]/70 font-light truncate">
-                        {`/dashboard/${restaurant.slug}`}
-                      </code>
-                      
-                      <a 
-                        href={`${origin}/dashboard/${restaurant.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 text-[10px] uppercase tracking-widest text-white/50 hover:text-white transition-colors"
-                      >
-                        Open →
-                      </a>
+                      <span className={`text-2xl font-light tracking-tighter ${s.count > 0 ? "text-[#E5D3B3]" : "text-white/10"}`}>{s.count}</span>
+                    </div>
+                    <div className="w-full h-[1px] bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#E5D3B3]/40 transition-all duration-1000 ease-out" style={{ width: `${(s.count / (Math.max(...rank.data.map(d => d.count)) || 1)) * 100}%` }}></div>
                     </div>
                   </div>
-                </div>
-              ))}
-              {restaurants.length === 0 && (
-                <p className="text-base font-light text-white/30 text-center py-8">No locations found.</p>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div className="lg:col-span-8 rounded-3xl border border-white/5 bg-[#0a0a0a] p-10 shadow-2xl">
-            <h2 className="text-sm uppercase tracking-[0.2em] text-white/50 mb-8">Active Servers & QR Codes</h2>
-            <div className="max-h-[700px] overflow-y-auto pr-3 space-y-6 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent]">
-              {servers.map((server) => {
-                const hasApp = !!server.restaurants?.slug;
-                const appLink = hasApp
-                  ? `https://appchefexperience.com/${server.restaurants?.slug}?server=${server.code}`
-                  : "Link indisponível";
-
-                const restaurantData = restaurants.find(r => r.id === server.restaurant_id);
-
-                const hasReview = !!(server.restaurants?.slug && restaurantData?.review_url && origin);
-                const reviewLink = hasReview
-                    ? `${origin}/review/${server.restaurants?.slug}?server=${server.code}`
-                    : "Review link indisponível";
-
-                const appQrUrl = hasApp
-                    ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(appLink)}&bgcolor=FAFAFA&color=050505&margin=2`
-                    : "";
-
-                const reviewQrUrl = hasReview
-                    ? `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(reviewLink)}&bgcolor=FAFAFA&color=050505&margin=2`
-                    : "";
-
-                return (
-                  <div key={server.id} className="rounded-2xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#141414] to-[#0a0a0a] p-8 hover:border-white/10 transition-all shadow-md">
-                    <div className="flex flex-wrap md:flex-nowrap justify-between items-start gap-4 mb-8 pb-6 border-b border-white/5">
-                      <div>
-                        <p className="text-xl font-light tracking-wide text-white/90">{server.name}</p>
-                        <p className="text-sm text-white/40 mt-2">ID Code: <span className="text-white/70 font-medium">{server.code}</span></p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">Assigned to</p>
-                        <p className="text-sm font-light text-white/80 bg-white/5 border border-white/10 px-4 py-2 rounded-full inline-block">
-                          {server.restaurants?.name ?? "Unassigned"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="flex flex-col h-full">
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/60 mb-5 flex items-center gap-3">
-                          <span className={`w-2 h-2 rounded-full ${hasApp ? 'bg-[#E5D3B3] shadow-[0_0_5px_rgba(229,211,179,0.5)]' : 'bg-white/20'}`}></span> App Experience
-                        </p>
-                        <div className="flex gap-6">
-                          {appQrUrl ? (
-                            <div className="bg-[#fafafa] p-2.5 rounded-lg shrink-0 border border-white/10">
-                              <img src={appQrUrl} alt="App QR" className="w-24 h-24 object-contain" />
-                            </div>
-                          ) : (
-                            <div className="w-[116px] h-[116px] bg-[#0f0f0f] rounded-lg border border-white/5 flex items-center justify-center shrink-0">
-                              <p className="text-white/20 text-[10px] uppercase tracking-widest text-center px-2">N/A</p>
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-3 justify-center w-full">
-                            <button
-                              disabled={!hasApp}
-                              onClick={() => {
-                                if (!hasApp) return;
-                                navigator.clipboard.writeText(appLink);
-                                setCopiedId(`app-${server.id}`);
-                                setTimeout(() => setCopiedId(null), 2000);
-                              }}
-                              className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center rounded-lg ${hasApp ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" : "bg-transparent border-white/5 text-white/20 cursor-not-allowed"}`}
-                            >
-                              {copiedId === `app-${server.id}` ? "Copied" : "Copy Link"}
-                            </button>
-                            <a href={hasApp ? appLink : undefined} target="_blank" className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center rounded-lg ${hasApp ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" : "bg-transparent border-white/5 text-white/20 cursor-not-allowed pointer-events-none"}`}>
-                              Open App
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col h-full border-t border-white/5 pt-8 md:border-t-0 md:pt-0 md:border-l md:pl-8">
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/60 mb-5 flex items-center gap-3">
-                          <span className={`w-2 h-2 rounded-full ${hasReview ? 'bg-[#E5D3B3] shadow-[0_0_5px_rgba(229,211,179,0.5)]' : 'bg-white/20'}`}></span> Google Review
-                        </p>
-                        <div className="flex gap-6">
-                          {reviewQrUrl ? (
-                            <div className="bg-[#fafafa] p-2.5 rounded-lg shrink-0 border border-white/10">
-                              <img src={reviewQrUrl} alt="Review QR" className="w-24 h-24 object-contain" />
-                            </div>
-                          ) : (
-                            <div className="w-[116px] h-[116px] bg-[#0f0f0f] rounded-lg border border-white/5 flex items-center justify-center shrink-0">
-                              <p className="text-white/20 text-[10px] uppercase tracking-widest text-center px-2">N/A</p>
-                            </div>
-                          )}
-                          <div className="flex flex-col gap-3 justify-center w-full">
-                            <button
-                              disabled={!hasReview}
-                              onClick={() => {
-                                if (!hasReview) return;
-                                navigator.clipboard.writeText(reviewLink);
-                                setCopiedId(`review-${server.id}`);
-                                setTimeout(() => setCopiedId(null), 2000);
-                              }}
-                              className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center rounded-lg ${hasReview ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" : "bg-transparent border-white/5 text-white/20 cursor-not-allowed"}`}
-                            >
-                              {copiedId === `review-${server.id}` ? "Copied" : "Copy Link"}
-                            </button>
-                            <a href={hasReview ? reviewLink : undefined} target="_blank" className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center rounded-lg ${hasReview ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" : "bg-transparent border-white/5 text-white/20 cursor-not-allowed pointer-events-none"}`}>
-                              Open Review
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          ))}
         </div>
+
+        <footer className="pt-20 border-t border-white/5 opacity-20 flex justify-between items-center">
+          <p className="text-[9px] tracking-[0.5em] uppercase font-light">Looping Media Intelligence — 2026</p>
+          <p className="text-[9px] tracking-[0.5em] uppercase font-light italic">Refining Restaurant Operations</p>
+        </footer>
       </div>
     </main>
   );
