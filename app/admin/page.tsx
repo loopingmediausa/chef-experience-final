@@ -58,6 +58,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadData();
+    // Captura o domínio atual para gerar os links corretamente
     setOrigin(window.location.origin);
   }, []);
 
@@ -130,7 +131,6 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-[#f8f9fa] p-6 md:p-10 font-sans selection:bg-white selection:text-black relative overflow-hidden">
       
-      {/* Textura de fundo bem sutil */}
       <div 
         className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none"
         style={{
@@ -142,7 +142,6 @@ export default function AdminPage() {
 
       <div className="max-w-[1500px] mx-auto relative z-10 space-y-10">
         
-        {/* Cabeçalho */}
         <div className="flex items-start justify-between mb-8 border-b border-white/10 pb-8">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/50 font-light mb-3">
@@ -161,97 +160,74 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Formulários de Criação */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12">
-          
-          {/* Create Restaurant */}
           <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 shadow-2xl">
             <h2 className="text-2xl font-light tracking-wide text-white/90 mb-8 flex items-center gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-[#E5D3B3] shadow-[0_0_8px_rgba(229,211,179,0.5)]"></span> New Restaurant
             </h2>
 
             <form onSubmit={handleCreateRestaurant} className="space-y-6">
-              <div>
-                <input
-                  value={restaurantName}
-                  onChange={(e) => setRestaurantName(e.target.value)}
-                  placeholder="Restaurant name"
-                  className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 focus:bg-white/[0.04] focus:ring-0 transition-all text-base font-light outline-none"
-                />
-              </div>
-
-              <div>
-                <input
-                  value={restaurantSlug}
-                  onChange={(e) => setRestaurantSlug(e.target.value)}
-                  placeholder="slug-example"
-                  className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 focus:bg-white/[0.04] focus:ring-0 transition-all text-base font-light outline-none"
-                />
-              </div>
-
-              <div>
-                <input
-                  value={restaurantReviewUrl}
-                  onChange={(e) => setRestaurantReviewUrl(e.target.value)}
-                  placeholder="Google review URL"
-                  className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 focus:bg-white/[0.04] focus:ring-0 transition-all text-base font-light outline-none"
-                />
-              </div>
-
+              <input
+                value={restaurantName}
+                onChange={(e) => setRestaurantName(e.target.value)}
+                placeholder="Restaurant name"
+                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
+              />
+              <input
+                value={restaurantSlug}
+                onChange={(e) => setRestaurantSlug(e.target.value)}
+                placeholder="slug-example"
+                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
+              />
+              <input
+                value={restaurantReviewUrl}
+                onChange={(e) => setRestaurantReviewUrl(e.target.value)}
+                placeholder="Google review URL"
+                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
+              />
               <button
                 type="submit"
                 disabled={loadingRestaurant}
-                className="w-full bg-white/90 text-black py-4 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2 rounded-lg"
+                className="w-full bg-white/90 text-black py-4 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-white transition-colors disabled:opacity-50 mt-2 rounded-lg"
               >
                 {loadingRestaurant ? "Creating..." : "Create Restaurant"}
               </button>
             </form>
           </div>
 
-          {/* Create Server */}
           <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 shadow-2xl">
             <h2 className="text-2xl font-light tracking-wide text-white/90 mb-8 flex items-center gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-[#E5D3B3] shadow-[0_0_8px_rgba(229,211,179,0.5)]"></span> New Server
             </h2>
-
             <form onSubmit={handleCreateServer} className="space-y-6">
-              <div>
-                <input
-                  value={serverName}
-                  onChange={(e) => setServerName(e.target.value)}
-                  placeholder="Server name"
-                  className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 focus:bg-white/[0.04] focus:ring-0 transition-all text-base font-light outline-none"
-                />
-              </div>
-
-              <div>
-                <input
-                  value={serverCode}
-                  onChange={(e) => setServerCode(e.target.value)}
-                  placeholder="Server code (e.g., 001)"
-                  className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 focus:bg-white/[0.04] focus:ring-0 transition-all text-base font-light outline-none"
-                />
-              </div>
-
-              <div>
-                <select
-                  value={serverRestaurantId}
-                  onChange={(e) => setServerRestaurantId(e.target.value)}
-                  className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white focus:border-white/30 focus:bg-white/[0.04] focus:ring-0 transition-all text-base font-light outline-none appearance-none"
-                >
-                  <option value="" className="bg-[#0a0a0a] text-white/50">Select restaurant...</option>
-                  {restaurants.map((restaurant) => (
-                    <option key={restaurant.id} value={restaurant.id} className="bg-[#0a0a0a] text-white">
-                      {restaurant.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+              <input
+                value={serverName}
+                onChange={(e) => setServerName(e.target.value)}
+                placeholder="Server name"
+                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
+              />
+              <input
+                value={serverCode}
+                onChange={(e) => setServerCode(e.target.value)}
+                placeholder="Server code (e.g., 001)"
+                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white placeholder-white/30 focus:border-white/30 transition-all text-base font-light outline-none"
+              />
+              <select
+                value={serverRestaurantId}
+                onChange={(e) => setServerRestaurantId(e.target.value)}
+                className="w-full bg-white/[0.02] border border-white/10 rounded-xl py-4 px-5 text-white focus:border-white/30 transition-all text-base font-light outline-none appearance-none"
+              >
+                <option value="" className="bg-[#0a0a0a] text-white/50">Select restaurant...</option>
+                {restaurants.map((restaurant) => (
+                  <option key={restaurant.id} value={restaurant.id} className="bg-[#0a0a0a] text-white">
+                    {restaurant.name}
+                  </option>
+                ))}
+              </select>
               <button
                 type="submit"
                 disabled={loadingServer}
-                className="w-full bg-[#E5D3B3] text-black py-4 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-[#f4e2c2] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2 rounded-lg"
+                className="w-full bg-[#E5D3B3] text-black py-4 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-[#f4e2c2] transition-colors disabled:opacity-50 mt-2 rounded-lg"
               >
                 {loadingServer ? "Creating..." : "Create Server"}
               </button>
@@ -259,10 +235,8 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Listagens */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           
-          {/* Restaurants List */}
           <div className="lg:col-span-4 rounded-3xl border border-white/5 bg-[#0a0a0a] p-10 shadow-2xl">
             <h2 className="text-sm uppercase tracking-[0.2em] text-white/50 mb-8">Registered Locations</h2>
 
@@ -273,6 +247,7 @@ export default function AdminPage() {
                   className="rounded-2xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#141414] to-[#0a0a0a] p-6 hover:border-white/20 transition-all"
                 >
                   <p className="text-lg font-light text-white/90 tracking-wide">{restaurant.name}</p>
+                  
                   <div className="mt-4 space-y-3">
                     <p className="text-sm text-white/40 flex justify-between">
                       <span>Slug:</span> 
@@ -285,6 +260,27 @@ export default function AdminPage() {
                       </span>
                     </p>
                   </div>
+
+                  {/* BLOCO DE ACESSO AO DASHBOARD - NOVO */}
+                  <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-medium">
+                      Access Dashboard
+                    </p>
+                    <div className="group relative flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 transition-all hover:border-[#E5D3B3]/30">
+                      <code className="text-[10px] text-[#E5D3B3]/70 font-light truncate">
+                        {`/dashboard/${restaurant.slug}`}
+                      </code>
+                      
+                      <a 
+                        href={`${origin}/dashboard/${restaurant.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 text-[10px] uppercase tracking-widest text-white/50 hover:text-white transition-colors"
+                      >
+                        Open →
+                      </a>
+                    </div>
+                  </div>
                 </div>
               ))}
               {restaurants.length === 0 && (
@@ -293,10 +289,8 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Servers List */}
           <div className="lg:col-span-8 rounded-3xl border border-white/5 bg-[#0a0a0a] p-10 shadow-2xl">
             <h2 className="text-sm uppercase tracking-[0.2em] text-white/50 mb-8">Active Servers & QR Codes</h2>
-
             <div className="max-h-[700px] overflow-y-auto pr-3 space-y-6 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent]">
               {servers.map((server) => {
                 const hasApp = !!server.restaurants?.slug;
@@ -304,9 +298,7 @@ export default function AdminPage() {
                   ? `https://appchefexperience.com/${server.restaurants?.slug}?server=${server.code}`
                   : "Link indisponível";
 
-                const restaurantData = restaurants.find(
-                  (restaurant) => restaurant.id === server.restaurant_id
-                );
+                const restaurantData = restaurants.find(r => r.id === server.restaurant_id);
 
                 const hasReview = !!(server.restaurants?.slug && restaurantData?.review_url && origin);
                 const reviewLink = hasReview
@@ -322,16 +314,11 @@ export default function AdminPage() {
                     : "";
 
                 return (
-                  <div
-                    key={server.id}
-                    className="rounded-2xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#141414] to-[#0a0a0a] p-8 hover:border-white/10 transition-all shadow-md"
-                  >
+                  <div key={server.id} className="rounded-2xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#141414] to-[#0a0a0a] p-8 hover:border-white/10 transition-all shadow-md">
                     <div className="flex flex-wrap md:flex-nowrap justify-between items-start gap-4 mb-8 pb-6 border-b border-white/5">
                       <div>
                         <p className="text-xl font-light tracking-wide text-white/90">{server.name}</p>
-                        <p className="text-sm text-white/40 mt-2">
-                          ID Code: <span className="text-white/70 font-medium">{server.code}</span>
-                        </p>
+                        <p className="text-sm text-white/40 mt-2">ID Code: <span className="text-white/70 font-medium">{server.code}</span></p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-2">Assigned to</p>
@@ -341,161 +328,78 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-                      
-                      {/* App QR Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="flex flex-col h-full">
-                        <div className="flex-1">
-                          <p className="text-xs uppercase tracking-[0.2em] text-white/60 mb-5 flex items-center gap-3">
-                            <span className={`w-2 h-2 rounded-full ${hasApp ? 'bg-[#E5D3B3] shadow-[0_0_5px_rgba(229,211,179,0.5)]' : 'bg-white/20'}`}></span> App Experience
-                          </p>
-                          
-                          <div className="flex gap-6">
-                            {appQrUrl ? (
-                              <div className="bg-[#fafafa] p-2.5 rounded-lg shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-white/10">
-                                <img
-                                  src={appQrUrl}
-                                  alt={`App QR ${server.name}`}
-                                  className="w-24 h-24 object-contain"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-[116px] h-[116px] bg-[#0f0f0f] rounded-lg border border-white/5 flex items-center justify-center shrink-0">
-                                <p className="text-white/20 text-[10px] text-center px-2 uppercase tracking-widest">N/A</p>
-                              </div>
-                            )}
-                            
-                            <div className="flex flex-col gap-3 justify-center w-full">
-                              <button
-                                disabled={!hasApp}
-                                onClick={() => {
-                                  if (!hasApp) return;
-                                  navigator.clipboard.writeText(appLink);
-                                  setCopiedId(`app-${server.id}`);
-                                  setTimeout(() => setCopiedId(null), 2000);
-                                }}
-                                className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center transition-colors rounded-lg ${
-                                  hasApp 
-                                    ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" 
-                                    : "bg-transparent border-white/5 text-white/20 cursor-not-allowed"
-                                }`}
-                              >
-                                {copiedId === `app-${server.id}` ? "Copied" : "Copy Link"}
-                              </button>
-                              
-                              <a
-                                href={hasApp ? appLink : undefined}
-                                target={hasApp ? "_blank" : undefined}
-                                rel={hasApp ? "noopener noreferrer" : undefined}
-                                className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center block transition-colors rounded-lg ${
-                                  hasApp 
-                                    ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" 
-                                    : "bg-transparent border-white/5 text-white/20 cursor-not-allowed pointer-events-none"
-                                }`}
-                              >
-                                Open App
-                              </a>
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/60 mb-5 flex items-center gap-3">
+                          <span className={`w-2 h-2 rounded-full ${hasApp ? 'bg-[#E5D3B3] shadow-[0_0_5px_rgba(229,211,179,0.5)]' : 'bg-white/20'}`}></span> App Experience
+                        </p>
+                        <div className="flex gap-6">
+                          {appQrUrl ? (
+                            <div className="bg-[#fafafa] p-2.5 rounded-lg shrink-0 border border-white/10">
+                              <img src={appQrUrl} alt="App QR" className="w-24 h-24 object-contain" />
                             </div>
+                          ) : (
+                            <div className="w-[116px] h-[116px] bg-[#0f0f0f] rounded-lg border border-white/5 flex items-center justify-center shrink-0">
+                              <p className="text-white/20 text-[10px] uppercase tracking-widest text-center px-2">N/A</p>
+                            </div>
+                          )}
+                          <div className="flex flex-col gap-3 justify-center w-full">
+                            <button
+                              disabled={!hasApp}
+                              onClick={() => {
+                                if (!hasApp) return;
+                                navigator.clipboard.writeText(appLink);
+                                setCopiedId(`app-${server.id}`);
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }}
+                              className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center rounded-lg ${hasApp ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" : "bg-transparent border-white/5 text-white/20 cursor-not-allowed"}`}
+                            >
+                              {copiedId === `app-${server.id}` ? "Copied" : "Copy Link"}
+                            </button>
+                            <a href={hasApp ? appLink : undefined} target="_blank" className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center rounded-lg ${hasApp ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" : "bg-transparent border-white/5 text-white/20 cursor-not-allowed pointer-events-none"}`}>
+                              Open App
+                            </a>
                           </div>
                         </div>
-
-                        {appQrUrl ? (
-                          <a
-                            href={appQrUrl}
-                            download={`${server.code}-app-qr.png`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-6 block w-full bg-white/90 text-black px-4 py-3.5 text-[11px] uppercase tracking-[0.15em] font-semibold text-center hover:bg-white transition-colors rounded-lg"
-                          >
-                            Download QR
-                          </a>
-                        ) : (
-                          <button disabled className="mt-6 block w-full bg-transparent border border-white/5 text-white/20 px-4 py-3.5 text-[11px] uppercase tracking-[0.15em] text-center cursor-not-allowed rounded-lg">
-                            Unavailable
-                          </button>
-                        )}
                       </div>
 
-                      {/* Review QR Section */}
                       <div className="flex flex-col h-full border-t border-white/5 pt-8 md:border-t-0 md:pt-0 md:border-l md:pl-8">
-                        <div className="flex-1">
-                          <p className="text-xs uppercase tracking-[0.2em] text-white/60 mb-5 flex items-center gap-3">
-                            <span className={`w-2 h-2 rounded-full ${hasReview ? 'bg-[#E5D3B3] shadow-[0_0_5px_rgba(229,211,179,0.5)]' : 'bg-white/20'}`}></span> Google Review
-                          </p>
-                          
-                          <div className="flex gap-6">
-                            {reviewQrUrl ? (
-                              <div className="bg-[#fafafa] p-2.5 rounded-lg shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-white/10">
-                                <img
-                                  src={reviewQrUrl}
-                                  alt={`Review QR ${server.name}`}
-                                  className="w-24 h-24 object-contain"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-[116px] h-[116px] bg-[#0f0f0f] rounded-lg border border-white/5 flex items-center justify-center shrink-0">
-                                <p className="text-white/20 text-[10px] text-center px-2 uppercase tracking-widest">N/A</p>
-                              </div>
-                            )}
-                            
-                            <div className="flex flex-col gap-3 justify-center w-full">
-                              <button
-                                disabled={!hasReview}
-                                onClick={() => {
-                                  if (!hasReview) return;
-                                  navigator.clipboard.writeText(reviewLink);
-                                  setCopiedId(`review-${server.id}`);
-                                  setTimeout(() => setCopiedId(null), 2000);
-                                }}
-                                className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center transition-colors rounded-lg ${
-                                  hasReview 
-                                    ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" 
-                                    : "bg-transparent border-white/5 text-white/20 cursor-not-allowed"
-                                }`}
-                              >
-                                {copiedId === `review-${server.id}` ? "Copied" : "Copy Link"}
-                              </button>
-                              
-                              <a
-                                href={hasReview ? reviewLink : undefined}
-                                target={hasReview ? "_blank" : undefined}
-                                rel={hasReview ? "noopener noreferrer" : undefined}
-                                className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center block transition-colors rounded-lg ${
-                                  hasReview 
-                                    ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" 
-                                    : "bg-transparent border-white/5 text-white/20 cursor-not-allowed pointer-events-none"
-                                }`}
-                              >
-                                Open Review
-                              </a>
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/60 mb-5 flex items-center gap-3">
+                          <span className={`w-2 h-2 rounded-full ${hasReview ? 'bg-[#E5D3B3] shadow-[0_0_5px_rgba(229,211,179,0.5)]' : 'bg-white/20'}`}></span> Google Review
+                        </p>
+                        <div className="flex gap-6">
+                          {reviewQrUrl ? (
+                            <div className="bg-[#fafafa] p-2.5 rounded-lg shrink-0 border border-white/10">
+                              <img src={reviewQrUrl} alt="Review QR" className="w-24 h-24 object-contain" />
                             </div>
+                          ) : (
+                            <div className="w-[116px] h-[116px] bg-[#0f0f0f] rounded-lg border border-white/5 flex items-center justify-center shrink-0">
+                              <p className="text-white/20 text-[10px] uppercase tracking-widest text-center px-2">N/A</p>
+                            </div>
+                          )}
+                          <div className="flex flex-col gap-3 justify-center w-full">
+                            <button
+                              disabled={!hasReview}
+                              onClick={() => {
+                                if (!hasReview) return;
+                                navigator.clipboard.writeText(reviewLink);
+                                setCopiedId(`review-${server.id}`);
+                                setTimeout(() => setCopiedId(null), 2000);
+                              }}
+                              className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center rounded-lg ${hasReview ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" : "bg-transparent border-white/5 text-white/20 cursor-not-allowed"}`}
+                            >
+                              {copiedId === `review-${server.id}` ? "Copied" : "Copy Link"}
+                            </button>
+                            <a href={hasReview ? reviewLink : undefined} target="_blank" className={`w-full border px-4 py-3 text-[11px] uppercase tracking-[0.15em] text-center rounded-lg ${hasReview ? "bg-white/[0.02] border-white/10 hover:bg-white/10 text-white/80" : "bg-transparent border-white/5 text-white/20 cursor-not-allowed pointer-events-none"}`}>
+                              Open Review
+                            </a>
                           </div>
                         </div>
-
-                        {reviewQrUrl ? (
-                          <a
-                            href={reviewQrUrl}
-                            download={`${server.code}-review-qr.png`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-6 block w-full bg-white/90 text-black px-4 py-3.5 text-[11px] uppercase tracking-[0.15em] font-semibold text-center hover:bg-white transition-colors rounded-lg"
-                          >
-                            Download QR
-                          </a>
-                        ) : (
-                          <button disabled className="mt-6 block w-full bg-transparent border border-white/5 text-white/20 px-4 py-3.5 text-[11px] uppercase tracking-[0.15em] text-center cursor-not-allowed rounded-lg">
-                            Unavailable
-                          </button>
-                        )}
                       </div>
-
                     </div>
                   </div>
                 );
               })}
-              {servers.length === 0 && (
-                <p className="text-base font-light text-white/30 text-center py-8">No servers found.</p>
-              )}
             </div>
           </div>
         </div>
