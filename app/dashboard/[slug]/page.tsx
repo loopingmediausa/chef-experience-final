@@ -82,7 +82,6 @@ export default async function DashboardPage({
     );
   }
 
-  // AQUI ESTÁ O CONSERTO DOS DADOS (event_type)
   const { count: appViewsCount } = await supabase
     .from("events")
     .select("*", { count: "exact", head: true })

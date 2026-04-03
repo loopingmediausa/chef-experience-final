@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../../../lib/supabase"; // ajuste o caminho se necessário
+import { supabase } from "../../lib/supabase";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function AdminPage() {
   const [selectedRestaurantId, setSelectedRestaurantId] = useState("");
   const [loadingServer, setLoadingServer] = useState(false);
 
-  // Exemplo de restaurantes já cadastrados (pode vir do Supabase depois)
+  // Lista temporária de restaurantes (vamos trocar por busca real depois)
   const [restaurants] = useState([
     { id: "1", name: "Casa Pollastro", slug: "casa-pollastro" },
     { id: "2", name: "Chamas do Brasil", slug: "chamas-do-brasil" },
@@ -36,13 +36,12 @@ export default function AdminPage() {
           name: restaurantName,
           slug: restaurantSlug,
           google_review_url: googleReviewUrl,
-          owner_id: "seu-user-id-aqui", // ou pegar do auth
+          owner_id: "seu-user-id-aqui", // ← depois vamos pegar do auth
         });
 
       if (error) throw error;
 
-      alert("Restaurante criado com sucesso!");
-      // Limpa formulário
+      alert("✅ Restaurante criado com sucesso!");
       setRestaurantName("");
       setRestaurantSlug("");
       setGoogleReviewUrl("");
@@ -69,7 +68,7 @@ export default function AdminPage() {
 
       if (error) throw error;
 
-      alert("Server criado com sucesso!");
+      alert("✅ Server criado com sucesso!");
       setServerName("");
       setServerCode("");
       setSelectedRestaurantId("");
@@ -83,7 +82,7 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-[#050505] text-[#f8f9fa] font-sans relative overflow-hidden">
-      {/* TEXTURA DE FUNDO (igual ao Login + Dashboard) */}
+      {/* TEXTURA DE FUNDO */}
       <div
         className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none"
         style={{
@@ -117,7 +116,6 @@ export default function AdminPage() {
             </div>
 
             <form onSubmit={handleCreateRestaurant} className="space-y-8">
-              {/* Restaurant Name */}
               <div className="relative">
                 <input
                   type="text"
@@ -132,7 +130,6 @@ export default function AdminPage() {
                 </label>
               </div>
 
-              {/* Slug */}
               <div className="relative">
                 <input
                   type="text"
@@ -147,7 +144,6 @@ export default function AdminPage() {
                 </label>
               </div>
 
-              {/* Google Review URL */}
               <div className="relative">
                 <input
                   type="url"
@@ -161,7 +157,6 @@ export default function AdminPage() {
                 </label>
               </div>
 
-              {/* Botão CREATE RESTAURANT - estilo silver como no Login */}
               <button
                 type="submit"
                 disabled={loadingRestaurant}
@@ -180,7 +175,6 @@ export default function AdminPage() {
             </div>
 
             <form onSubmit={handleCreateServer} className="space-y-8">
-              {/* Server Name */}
               <div className="relative">
                 <input
                   type="text"
@@ -195,7 +189,6 @@ export default function AdminPage() {
                 </label>
               </div>
 
-              {/* Server Code */}
               <div className="relative">
                 <input
                   type="text"
@@ -210,7 +203,6 @@ export default function AdminPage() {
                 </label>
               </div>
 
-              {/* Select Restaurant */}
               <div className="relative">
                 <select
                   value={selectedRestaurantId}
@@ -218,11 +210,11 @@ export default function AdminPage() {
                   required
                   className="peer w-full bg-white/5 border border-white/10 focus:border-[#E5D3B3]/60 rounded-3xl px-7 py-7 text-white focus:outline-none transition-all text-base appearance-none"
                 >
-                  <option value="" disabled className="bg-[#050505] text-white/40">
+                  <option value="" disabled>
                     Select restaurant...
                   </option>
                   {restaurants.map((r) => (
-                    <option key={r.id} value={r.id} className="bg-[#050505]">
+                    <option key={r.id} value={r.id}>
                       {r.name}
                     </option>
                   ))}
@@ -232,7 +224,6 @@ export default function AdminPage() {
                 </label>
               </div>
 
-              {/* Botão CREATE SERVER - tom dourado (#E5D3B3) */}
               <button
                 type="submit"
                 disabled={loadingServer}
@@ -242,11 +233,6 @@ export default function AdminPage() {
               </button>
             </form>
           </div>
-        </div>
-
-        {/* Espaço para a seção de Registered Locations + Active Servers (você pode expandir depois) */}
-        <div className="mt-16 text-xs text-white/30 uppercase tracking-widest text-center">
-          Registered locations and Active Servers &amp; QR Codes will appear here
         </div>
       </div>
     </main>
