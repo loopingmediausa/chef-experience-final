@@ -17,7 +17,6 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // 1. Tentar o login e capturar os dados do usuário na resposta
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -37,13 +36,9 @@ export default function LoginPage() {
         return;
       }
 
-      // 2. Lógica de Redirecionamento Baseada no Perfil
-      
-      // Se for o seu e-mail de Admin da Looping Media
       if (user.email === "info.loopingmedia@gmail.com") {
         router.push("/admin");
       } else {
-        // Busca o slug do restaurante onde o owner_id é igual ao ID do usuário logado
         const { data: restaurant, error: dbError } = await supabase
           .from("restaurants")
           .select("slug")
@@ -58,7 +53,6 @@ export default function LoginPage() {
         }
 
         if (restaurant && restaurant.slug) {
-          // Redireciona o cliente direto para o Dashboard dele
           router.push(`/dashboard/${restaurant.slug}`);
         } else {
           setError("Nenhum restaurante vinculado a este e-mail.");
@@ -74,7 +68,6 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-black text-white flex font-sans selection:bg-white selection:text-black relative overflow-hidden">
-      
       {/* TEXTURA DE FUNDO */}
       <div 
         className="absolute inset-0 z-0 opacity-10 grayscale scale-110"
@@ -125,7 +118,8 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-8">
+            <form onSubmit={handleLogin} className="space-y-10">
+              {/* Campo Email - Mais elegante (caixa arredondada com fundo sutil) */}
               <div className="relative">
                 <input
                   type="email"
@@ -133,17 +127,18 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="block w-full bg-transparent border-0 border-b border-white/20 py-3 px-0 text-white placeholder-transparent focus:border-white focus:ring-0 transition-colors peer"
-                  placeholder="Email address"
+                  className="peer w-full bg-white/5 border border-white/10 focus:border-white/40 rounded-3xl px-6 pt-7 pb-3 text-white text-base placeholder-transparent focus:outline-none transition-all duration-300"
+                  placeholder=" "
                 />
                 <label
                   htmlFor="email"
-                  className="absolute left-0 -top-3.5 text-xs text-white/40 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-white/40 peer-placeholder-shown:top-3 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-white/70"
+                  className="absolute left-6 top-5 text-xs text-white/40 transition-all duration-300 peer-placeholder-shown:top-6 peer-placeholder-shown:text-base peer-focus:top-2 peer-focus:text-xs peer-focus:text-white/70 pointer-events-none"
                 >
                   Email address
                 </label>
               </div>
 
+              {/* Campo Password - Mesmo estilo elegante */}
               <div className="relative">
                 <input
                   type="password"
@@ -151,12 +146,12 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="block w-full bg-transparent border-0 border-b border-white/20 py-3 px-0 text-white placeholder-transparent focus:border-white focus:ring-0 transition-colors peer"
-                  placeholder="Password"
+                  className="peer w-full bg-white/5 border border-white/10 focus:border-white/40 rounded-3xl px-6 pt-7 pb-3 text-white text-base placeholder-transparent focus:outline-none transition-all duration-300"
+                  placeholder=" "
                 />
                 <label
                   htmlFor="password"
-                  className="absolute left-0 -top-3.5 text-xs text-white/40 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-white/40 peer-placeholder-shown:top-3 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-white/70"
+                  className="absolute left-6 top-5 text-xs text-white/40 transition-all duration-300 peer-placeholder-shown:top-6 peer-placeholder-shown:text-base peer-focus:top-2 peer-focus:text-xs peer-focus:text-white/70 pointer-events-none"
                 >
                   Password
                 </label>
@@ -166,12 +161,13 @@ export default function LoginPage() {
                 <p className="text-red-400/80 text-sm font-light">{error}</p>
               )}
 
+              {/* Botão - Cantos bem arredondados + gradiente silver metálico */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-white text-black py-4.5 text-[12px] uppercase tracking-[0.25em] font-semibold hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-4 rounded-sm"
+                className="w-full bg-gradient-to-r from-zinc-200 via-white to-zinc-100 text-zinc-950 py-6 text-sm font-semibold uppercase tracking-[0.125em] rounded-3xl hover:from-white hover:to-zinc-100 shadow-lg hover:shadow-white/20 active:scale-95 transition-all duration-300 disabled:opacity-60"
               >
-                {loading ? "Authenticating..." : "Sign In"}
+                {loading ? "Authenticating..." : "SIGN IN"}
               </button>
             </form>
           </div>
@@ -184,7 +180,6 @@ export default function LoginPage() {
           100% { transform: scale(1.15) translate(-1%, -1%); }
         }
       `}</style>
-      
     </main>
   );
 }
