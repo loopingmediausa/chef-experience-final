@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { 
+import { supabase } from "../../../lib/supabase";
   Users, 
   MousePointer2, 
   BarChart3, 
