@@ -70,25 +70,25 @@ export default async function DashboardPage({
 
   if (restaurantError || !restaurant) {
     return (
-      <main className="min-h-screen bg-[#050505] px-6 py-6 text-white flex items-center justify-center relative overflow-hidden text-center font-sans">
-         <div className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1544025162-8315ea07f239?q=80&w=2000&auto=format&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
-        <h1 className="text-4xl font-light tracking-wide relative z-10 uppercase">Location Not Found</h1>
+      <main className="min-h-screen bg-[#050505] px-6 py-6 text-white flex items-center justify-center relative overflow-hidden text-center font-sans uppercase tracking-widest font-light">
+         Location Not Found
       </main>
     );
   }
 
+  // CORREÇÃO: Voltando para 'event_type' que é o nome real na sua tabela
   const { count: appViewsCount } = await supabase
     .from("events")
     .select("*", { count: "exact", head: true })
     .eq("restaurant_id", restaurant.id)
-    .eq("type", "app_view")
+    .eq("event_type", "app_view")
     .gte("created_at", rangeStart);
 
   const { count: reviewClicksCount } = await supabase
     .from("events")
     .select("*", { count: "exact", head: true })
     .eq("restaurant_id", restaurant.id)
-    .eq("type", "review_click")
+    .eq("event_type", "review_click")
     .gte("created_at", rangeStart);
 
   const totalViews = appViewsCount ?? 0;
@@ -101,7 +101,7 @@ export default async function DashboardPage({
     .from("events")
     .select("server_id")
     .eq("restaurant_id", restaurant.id)
-    .eq("type", "app_view")
+    .eq("event_type", "app_view")
     .gte("created_at", rangeStart)
     .not("server_id", "is", null);
 
@@ -109,7 +109,7 @@ export default async function DashboardPage({
     .from("events")
     .select("server_id")
     .eq("restaurant_id", restaurant.id)
-    .eq("type", "review_click")
+    .eq("event_type", "review_click")
     .gte("created_at", rangeStart)
     .not("server_id", "is", null);
 
@@ -140,7 +140,8 @@ export default async function DashboardPage({
     .map((server) => ({ id: server.id, name: server.name, reviewClicks: reviewCountByServer[server.id] || 0 }))
     .sort((a, b) => b.reviewClicks - a.reviewClicks);
 
-  const topPerformerName = reviewRanking[0]?.reviewClicks > 0 || appRanking[0]?.appViews > 0
+  const topPerformerName =
+    reviewRanking[0]?.reviewClicks > 0 || appRanking[0]?.appViews > 0
       ? reviewRanking[0]?.reviewClicks >= appRanking[0]?.appViews ? reviewRanking[0].name : appRanking[0].name
       : "No data";
 
@@ -152,7 +153,7 @@ export default async function DashboardPage({
 
   const getStyle = (value: number | string) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
-    return num > 0 ? "text-white/95" : "text-white/20";
+    return num > 0 ? "text-white" : "text-white/20";
   };
 
   return (
@@ -165,7 +166,7 @@ export default async function DashboardPage({
         <div className="flex flex-col md:flex-row justify-between md:items-end gap-8 mb-12 border-b border-white/10 pb-8">
           <div>
             <p className="text-xs tracking-[0.3em] text-[#E5D3B3]/80 font-light uppercase mb-3">Chef Experience Dashboard</p>
-            <h1 className="text-5xl md:text-6xl font-light tracking-wide text-white uppercase">{restaurant.name}</h1>
+            <h1 className="text-5xl md:text-6xl font-light tracking-wide text-white uppercase leading-none">{restaurant.name}</h1>
           </div>
 
           <div className="flex flex-wrap gap-2 rounded-full border border-white/10 bg-white/[0.02] p-1.5 backdrop-blur-sm shadow-inner">
@@ -175,7 +176,7 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        {/* Master Card Hero - APENAS O TOP PERFORMER */}
+        {/* Top Performer Card */}
         <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 md:p-14 shadow-2xl relative overflow-hidden group">
           <div className="relative z-10 flex flex-col md:flex-row justify-between md:items-start gap-8">
             <div>
@@ -184,49 +185,49 @@ export default async function DashboardPage({
                 Top Performer
               </span>
               <h2 className={`mt-5 text-5xl md:text-6xl font-light tracking-wide ${topPerformerName === "No data" ? "text-white/30" : "text-white uppercase"}`}>{topPerformerName}</h2>
-              <p className="mt-4 max-w-lg text-white/50 text-base font-light leading-relaxed">Best overall performance combining app engagement and review generation.</p>
+              <p className="mt-4 max-w-lg text-white/50 text-base font-light leading-relaxed italic">Best overall performance combining app engagement and review generation.</p>
             </div>
             <div className="md:text-right">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-2">Performer Score</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-2">Score</p>
               <p className={`text-7xl md:text-8xl font-extralight tracking-tighter leading-none ${totalViews + totalReviews > 0 ? "text-[#E5D3B3]" : "text-white/20"}`}>{totalViews + totalReviews}</p>
             </div>
           </div>
         </div>
 
-        {/* Linha de Métricas Secundárias - TOTAL GERAL DA CASA */}
+        {/* Global Stats Bar */}
         <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] py-10 px-6 shadow-xl text-center">
           <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">App Views</p>
-              <HelpTooltip text="Total views for the entire restaurant." />
+              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-medium">App Views</p>
+              <HelpTooltip text="Total location app views." />
             </div>
             <p className={`text-4xl font-light ${getStyle(totalViews)}`}>{totalViews}</p>
           </div>
           <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">Review Clicks</p>
-              <HelpTooltip text="Total review clicks for the entire restaurant." />
+              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-medium">Review Clicks</p>
+              <HelpTooltip text="Total location review clicks." />
             </div>
             <p className={`text-4xl font-light ${getStyle(totalReviews)}`}>{totalReviews}</p>
           </div>
           <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">Conversion</p>
-              <HelpTooltip text="Efficiency rate of the location." />
+              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-medium">Conversion</p>
+              <HelpTooltip text="Efficiency rate (Clicks/Views)." />
             </div>
             <p className={`text-4xl font-light ${getStyle(overallConversionRate)}`}>{overallConversionRate}%</p>
           </div>
           <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">Active App</p>
-              <HelpTooltip text="Servers who generated at least one view." />
+              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-medium">Active App</p>
+              <HelpTooltip text="Servers with at least 1 view." />
             </div>
             <p className={`text-4xl font-light ${getStyle(activeAppServers)}`}>{activeAppServers}</p>
           </div>
           <div className="flex-1 px-6 py-4 md:py-0">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">Active Review</p>
-              <HelpTooltip text="Servers who generated at least one review." />
+              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-medium">Active Review</p>
+              <HelpTooltip text="Servers with at least 1 click." />
             </div>
             <p className={`text-4xl font-light ${getStyle(activeReviewServers)}`}>{activeReviewServers}</p>
           </div>
@@ -234,12 +235,13 @@ export default async function DashboardPage({
 
         {/* Rankings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pb-20">
-          <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 shadow-xl">
-            <h3 className="text-sm text-white/70 font-medium uppercase tracking-[0.2em] mb-10 border-b border-white/5 pb-6">App Ranking</h3>
+          {/* App Ranking */}
+          <div className="rounded-3xl border border-white/5 bg-[#0a0a0a] p-10 shadow-xl">
+            <h3 className="text-sm text-white/70 font-medium uppercase tracking-[0.2em] mb-10 border-b border-white/5 pb-6 italic">App Ranking</h3>
             <div className="space-y-8">
               {appRanking.slice(0, 5).map((server, index) => (
                 <div key={server.id}>
-                  <div className="flex items-center justify-between mb-3 font-light tracking-wide">
+                  <div className="flex items-center justify-between mb-3 font-light tracking-wide uppercase">
                     <span className="text-white/30 text-xs">0{index + 1} — {server.name}</span>
                     <span className={getStyle(server.appViews)}>{server.appViews}</span>
                   </div>
@@ -251,12 +253,13 @@ export default async function DashboardPage({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 shadow-xl">
-            <h3 className="text-sm text-white/70 font-medium uppercase tracking-[0.2em] mb-10 border-b border-white/5 pb-6">Review Ranking</h3>
+          {/* Review Ranking */}
+          <div className="rounded-3xl border border-white/5 bg-[#0a0a0a] p-10 shadow-xl">
+            <h3 className="text-sm text-white/70 font-medium uppercase tracking-[0.2em] mb-10 border-b border-white/5 pb-6 italic">Review Ranking</h3>
             <div className="space-y-8">
               {reviewRanking.slice(0, 5).map((server, index) => (
                 <div key={server.id}>
-                  <div className="flex items-center justify-between mb-3 font-light tracking-wide">
+                  <div className="flex items-center justify-between mb-3 font-light tracking-wide uppercase">
                     <span className="text-white/30 text-xs">0{index + 1} — {server.name}</span>
                     <span className={getStyle(server.reviewClicks)}>{server.reviewClicks}</span>
                   </div>
