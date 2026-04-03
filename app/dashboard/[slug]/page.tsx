@@ -1,70 +1,182 @@
-import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "../../../lib/supabase";
-import { 
-  Users, 
-  MousePointer2, 
-  BarChart3, 
-  Zap,
-  ArrowUpRight,
-  TrendingUp
-} from "lucide-react";
 
-interface PageProps {
+type PageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ range?: string }>;
+};
+
+function HelpTooltip({ text }: { text: string }) {
+  return (
+    <div className="relative group shrink-0">
+      <button
+        type="button"
+        className="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-transparent text-[10px] text-white/50 transition hover:border-[#E5D3B3]/80 hover:text-[#E5D3B3]"
+      >
+        ?
+      </button>
+
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 top-8 z-30 hidden w-64 rounded-xl border border-white/10 bg-[#0a0a0a]/95 p-4 text-xs font-light leading-relaxed text-white/90 shadow-2xl group-hover:block backdrop-blur-xl">
+        {text}
+      </div>
+    </div>
+  );
 }
 
 function getRangeStart(range: string) {
-  const start = new Date();
-  if (range === "day") start.setHours(0, 0, 0, 0);
-  else if (range === "week") start.setDate(start.getDate() - 7);
-  else if (range === "month") start.setDate(start.getDate() - 30);
-  else if (range === "year") start.setDate(start.getDate() - 365);
-  else start.setDate(start.getDate() - 7);
+  const now = new Date();
+  const start = new Date(now);
+
+  if (range === "day") {
+    start.setHours(0, 0, 0, 0);
+  } else if (range === "week") {
+    start.setDate(start.getDate() - 7);
+  } else if (range === "month") {
+    start.setDate(start.getDate() - 30);
+  } else if (range === "year") {
+    start.setDate(start.getDate() - 365);
+  } else {
+    start.setDate(start.getDate() - 7);
+  }
+
   return start.toISOString();
+}
+
+function buildRangeHref(slug: string, range: string) {
+  return `/dashboard/${slug}?range=${range}`;
 }
 
 export default async function DashboardPage({
   params,
   searchParams,
 }: PageProps) {
-  
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
-  const range = resolvedSearchParams.range || "week";
+  const range =
+    resolvedSearchParams.range === "day" ||
+    resolvedSearchParams.range === "week" ||
+    resolvedSearchParams.range === "month" ||
+    resolvedSearchParams.range === "year"
+      ? resolvedSearchParams.range
+      : "week";
+
   const rangeStart = getRangeStart(range);
 
-  // Busca os dados do restaurante
-  const { data: restaurant } = await supabase
+  const { data: restaurant, error: restaurantError } = await supabase
     .from("restaurants")
-    .select("*")
+    .select("id, name, slug")
     .eq("slug", slug)
     .single();
 
-  if (!restaurant) notFound();
+  if (restaurantError || !restaurant) {
+    return (
+      <main className="min-h-screen bg-[#050505] px-6 py-6 text-white flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1544025162-8315ea07f239?q=80&w=2000&auto=format&fit=crop')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+        <div className="text-center relative z-10">
+          <h1 className="text-4xl font-light tracking-wide">Location Not Found</h1>
+          <p className="mt-4 text-white/50 text-lg font-light">
+            Please verify the unique link for this dashboard.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
-  // Busca os garçons
-  const { data: servers } = await supabase
-    .from("servers")
-    .select("*")
-    .eq("restaurant_id", restaurant.id);
-
-  // Busca os eventos (métricas)
-  const { data: events } = await supabase
+  const { count: appViewsCount } = await supabase
     .from("events")
-    .select("*")
+    .select("*", { count: "exact", head: true })
     .eq("restaurant_id", restaurant.id)
+    .eq("event_type", "app_view")
     .gte("created_at", rangeStart);
 
-  const totalViews = events?.filter((e) => e.type === "app_view").length || 0;
-  const totalReviews = events?.filter((e) => e.type === "review_click").length || 0;
-  const ctr = totalViews > 0 ? ((totalReviews / totalViews) * 100).toFixed(1) : "0";
+  const { count: reviewClicksCount } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .eq("restaurant_id", restaurant.id)
+    .eq("event_type", "review_click")
+    .gte("created_at", rangeStart);
+
+  const totalViews = appViewsCount ?? 0;
+  const totalReviews = reviewClicksCount ?? 0;
+
+  const overallConversionRate =
+    totalViews > 0 ? ((totalReviews / totalViews) * 100).toFixed(1) : "0.0";
+
+  const { data: appViewEvents } = await supabase
+    .from("events")
+    .select("server_id")
+    .eq("restaurant_id", restaurant.id)
+    .eq("event_type", "app_view")
+    .gte("created_at", rangeStart)
+    .not("server_id", "is", null);
+
+  const { data: reviewClickEvents } = await supabase
+    .from("events")
+    .select("server_id")
+    .eq("restaurant_id", restaurant.id)
+    .eq("event_type", "review_click")
+    .gte("created_at", rangeStart)
+    .not("server_id", "is", null);
+
+  const { data: servers } = await supabase
+    .from("servers")
+    .select("id, name")
+    .eq("restaurant_id", restaurant.id);
+
+  const serverRows = (servers ?? []) as { id: string; name: string }[];
+
+  const appViewCountByServer: Record<string, number> = {};
+  appViewEvents?.forEach((event) => {
+    if (!event.server_id) return;
+    appViewCountByServer[event.server_id] =
+      (appViewCountByServer[event.server_id] || 0) + 1;
+  });
+
+  const reviewCountByServer: Record<string, number> = {};
+  reviewClickEvents?.forEach((event) => {
+    if (!event.server_id) return;
+    reviewCountByServer[event.server_id] =
+      (reviewCountByServer[event.server_id] || 0) + 1;
+  });
+
+  const appRanking = [...serverRows]
+    .map((server) => ({
+      id: server.id,
+      name: server.name,
+      appViews: appViewCountByServer[server.id] || 0,
+    }))
+    .sort((a, b) => b.appViews - a.appViews);
+
+  const reviewRanking = [...serverRows]
+    .map((server) => ({
+      id: server.id,
+      name: server.name,
+      reviewClicks: reviewCountByServer[server.id] || 0,
+    }))
+    .sort((a, b) => b.reviewClicks - a.reviewClicks);
+
+  const topPerformerName =
+    reviewRanking[0]?.reviewClicks || appRanking[0]?.appViews
+      ? reviewRanking[0]?.name ?? appRanking[0]?.name ?? "No data"
+      : "No data";
+
+  const activeAppServers = appRanking.filter((server) => server.appViews > 0).length;
+  const activeReviewServers = reviewRanking.filter(
+    (server) => server.reviewClicks > 0
+  ).length;
+
+  const maxAppViews = appRanking.length > 0 ? Math.max(...appRanking.map(s => s.appViews), 1) : 1;
+  const maxReviewClicks = reviewRanking.length > 0 ? Math.max(...reviewRanking.map(s => s.reviewClicks), 1) : 1;
+
+  const getStyle = (value: number | string) => {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    return num > 0 ? "text-white/95" : "text-white/20";
+  };
 
   return (
-    <main className="min-h-screen bg-[#050505] text-[#f8f9fa] p-6 md:p-10 font-sans selection:bg-white selection:text-black relative overflow-hidden">
+    <main className="min-h-screen bg-[#050505] px-6 py-10 md:py-16 text-[#f8f9fa] font-sans selection:bg-[#E5D3B3] selection:text-black relative overflow-hidden">
       
-      {/* Textura de fundo sutil (Identica ao Admin) */}
+      {/* Fundo sutil para textura */}
       <div 
         className="absolute inset-0 z-0 opacity-[0.03] grayscale pointer-events-none"
         style={{
@@ -74,123 +186,258 @@ export default async function DashboardPage({
         }}
       ></div>
 
-      <div className="max-w-[1400px] mx-auto relative z-10">
+      <div className="mx-auto max-w-[1500px] space-y-10 relative z-10">
         
-        {/* Header - Estilo Looping Media */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 border-b border-white/10 pb-8 gap-6">
+        {/* Cabeçalho */}
+        <div className="flex flex-col md:flex-row justify-between md:items-end gap-8 mb-12 border-b border-white/10 pb-8">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-light mb-2">
-              Chef Experience / Intelligence
+            <p className="text-xs tracking-[0.3em] text-[#E5D3B3]/80 font-light uppercase mb-3">
+              Chef Experience Dashboard
             </p>
-            <h1 className="text-4xl md:text-5xl font-light tracking-tight text-white uppercase">
+            <h1 className="text-5xl md:text-6xl font-light tracking-wide text-white">
               {restaurant.name}
             </h1>
           </div>
-          
-          <nav className="flex items-center gap-2 bg-white/[0.03] border border-white/10 p-1.5 rounded-full backdrop-blur-md">
-            {["day", "week", "month", "year"].map((r) => (
-              <a
-                key={r}
-                href={`/dashboard/${slug}?range=${r}`}
-                className={`px-5 py-2 rounded-full text-[10px] uppercase tracking-[0.2em] transition-all ${
-                  range === r ? "bg-[#E5D3B3] text-black font-bold shadow-lg shadow-[#E5D3B3]/20" : "text-white/40 hover:text-white"
+
+          <div className="flex flex-wrap gap-2 rounded-full border border-white/10 bg-white/[0.02] p-1.5 backdrop-blur-sm shadow-inner">
+            {["day", "week", "month", "year"].map((item) => (
+              <Link
+                key={item}
+                href={buildRangeHref(slug, item)}
+                className={`rounded-full px-8 py-2.5 text-xs uppercase tracking-widest font-medium transition-all ${
+                  item === range
+                    ? "bg-[#E5D3B3] text-black shadow-[0_0_20px_rgba(229,211,179,0.2)]"
+                    : "text-white/50 hover:text-white hover:bg-white/5"
                 }`}
               >
-                {r}
-              </a>
+                {item}
+              </Link>
             ))}
-          </nav>
+          </div>
         </div>
 
-        {/* Grid de Métricas - Estilo Black Card */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+        {/* Master Card Black - Top Performer */}
+        <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 md:p-14 shadow-2xl relative overflow-hidden group">
           
-          <div className="rounded-2xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 shadow-2xl group hover:border-white/20 transition-all">
-            <div className="flex justify-between items-start mb-10">
-              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 group-hover:bg-[#E5D3B3]/10 transition-colors">
-                <Zap className="w-5 h-5 text-[#E5D3B3]" />
-              </div>
-              <div className="flex items-center gap-2 text-[9px] tracking-[0.2em] text-[#E5D3B3] font-medium bg-[#E5D3B3]/5 px-3 py-1 rounded-full border border-[#E5D3B3]/20">
-                LIVE <span className="w-1 h-1 bg-[#E5D3B3] rounded-full animate-pulse"></span>
-              </div>
+          <div className="relative z-10 flex flex-col md:flex-row justify-between md:items-start gap-8">
+            <div>
+              <span className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/50 font-medium">
+                <span className="w-2 h-2 rounded-full bg-[#E5D3B3] shadow-[0_0_10px_rgba(229,211,179,0.6)]"></span>
+                Top Performer
+              </span>
+
+              <h2 className={`mt-5 text-5xl md:text-6xl font-light tracking-wide ${topPerformerName === "No data" ? "text-white/30" : "text-white"}`}>
+                {topPerformerName}
+              </h2>
+
+              <p className="mt-4 max-w-lg text-white/50 text-base font-light leading-relaxed">
+                Best overall performance combining app engagement and review generation.
+              </p>
             </div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-white/30 mb-2">App Experience Views</p>
-            <h3 className="text-6xl font-bold tracking-tighter text-white">{totalViews}</h3>
+
+            <div className="md:text-right">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-2">Score</p>
+              <p className={`text-7xl md:text-8xl font-extralight tracking-tighter leading-none ${totalViews + totalReviews > 0 ? "text-[#E5D3B3]" : "text-white/20"}`}>
+                {totalViews + totalReviews}
+              </p>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#1a1a1a] via-[#0a0a0a] to-[#050505] p-10 shadow-2xl group hover:border-white/20 transition-all">
-            <div className="flex justify-between items-start mb-10">
-              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                <MousePointer2 className="w-5 h-5 text-white/60" />
+          <div className="relative z-10 mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+            <div className="border-t border-white/10 pt-8">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-white/50 uppercase tracking-[0.2em]">App Views</p>
+                <HelpTooltip text="Total app views generated in the selected period." />
               </div>
-              <TrendingUp className="w-5 h-5 text-white/10 group-hover:text-white/40 transition-colors" />
+              <p className={`mt-4 text-4xl md:text-5xl font-light ${getStyle(totalViews)}`}>{totalViews}</p>
             </div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-white/30 mb-2">Google Review Clicks</p>
-            <h3 className="text-6xl font-bold tracking-tighter text-white">{totalReviews}</h3>
-          </div>
 
-          <div className="rounded-2xl border border-white/5 bg-white p-10 shadow-2xl group transition-all">
-            <div className="flex justify-between items-start mb-10">
-              <div className="w-12 h-12 bg-black/5 rounded-xl flex items-center justify-center border border-black/5">
-                <BarChart3 className="w-5 h-5 text-black/60" />
+            <div className="border-t border-white/10 pt-8">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-white/50 uppercase tracking-[0.2em]">Review Clicks</p>
+                <HelpTooltip text="Total review clicks generated in the selected period." />
               </div>
-              <ArrowUpRight className="w-5 h-5 text-black/20" />
+              <p className={`mt-4 text-4xl md:text-5xl font-light ${getStyle(totalReviews)}`}>{totalReviews}</p>
             </div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-black/40 mb-2">Conversion Rate</p>
-            <h3 className="text-6xl font-bold tracking-tighter text-black">{ctr}%</h3>
+
+            <div className="border-t border-white/10 pt-8">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-white/50 uppercase tracking-[0.2em]">Conversion</p>
+                <HelpTooltip text="Percentage of app views that turned into review clicks." />
+              </div>
+              <p className={`mt-4 text-4xl md:text-5xl font-light ${getStyle(overallConversionRate)}`}>
+                {overallConversionRate}%
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Team Performance - Lista Estilo Admin */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4 mb-10">
-            <h2 className="text-xs font-light tracking-[0.5em] uppercase text-white/40 italic">Elite Performance</h2>
-            <div className="h-[1px] flex-1 bg-white/5"></div>
+        {/* Linha de Métricas Secundárias */}
+        <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] py-10 px-6 shadow-xl">
+          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0 text-center last:border-0">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">App Views</p>
+              <HelpTooltip text="Total number of visits to the restaurant app." />
+            </div>
+            <p className={`text-3xl md:text-4xl font-light ${getStyle(totalViews)}`}>{totalViews}</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            {servers?.map((server) => {
-              const serverViews = events?.filter(e => e.server_id === server.id && e.type === 'app_view').length || 0;
-              const serverReviews = events?.filter(e => e.server_id === server.id && e.type === 'review_click').length || 0;
-              
-              return (
-                <div 
-                  key={server.id} 
-                  className="group bg-[#0a0a0a] border border-white/5 p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between hover:border-white/20 transition-all bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#141414] to-[#0a0a0a]"
-                >
-                  <div className="flex items-center gap-8 mb-6 md:mb-0 w-full md:w-auto">
-                    <div className="w-14 h-14 bg-white/[0.03] border border-white/10 rounded-full flex items-center justify-center text-xl font-light text-white/20 group-hover:border-[#E5D3B3]/40 group-hover:text-[#E5D3B3] transition-all">
-                      {server.name[0]}
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-light tracking-wide text-white/90 uppercase">{server.name}</h4>
-                      <p className="text-[10px] opacity-30 uppercase tracking-[0.3em] mt-1">Operator ID: {server.id_code}</p>
-                    </div>
-                  </div>
+          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0 text-center last:border-0">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">Review Clicks</p>
+              <HelpTooltip text="Total number of clicks on the review flow." />
+            </div>
+            <p className={`text-3xl md:text-4xl font-light ${getStyle(totalReviews)}`}>{totalReviews}</p>
+          </div>
 
-                  <div className="flex gap-16 w-full md:w-auto justify-between md:justify-end border-t border-white/5 pt-6 md:border-0 md:pt-0">
-                    <div className="text-right">
-                      <p className="text-[10px] opacity-20 uppercase tracking-[0.3em] mb-1 font-medium">Experience Views</p>
-                      <p className="text-3xl font-light text-white group-hover:text-[#E5D3B3] transition-colors">{serverViews}</p>
+          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0 text-center last:border-0">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">Conversion</p>
+              <HelpTooltip text="Percentage of app visits that turned into review clicks." />
+            </div>
+            <p className={`text-3xl md:text-4xl font-light ${getStyle(overallConversionRate)}`}>{overallConversionRate}%</p>
+          </div>
+
+          <div className="flex-1 border-b md:border-b-0 md:border-r border-white/5 px-6 py-4 md:py-0 text-center last:border-0">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">Active App</p>
+              <HelpTooltip text="Servers with at least one app view in the selected period." />
+            </div>
+            <p className={`text-3xl md:text-4xl font-light ${getStyle(activeAppServers)}`}>{activeAppServers}</p>
+          </div>
+
+          <div className="flex-1 px-6 py-4 md:py-0 text-center">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <p className="text-xs text-white/50 uppercase tracking-[0.2em] font-medium">Active Review</p>
+              <HelpTooltip text="Servers with at least one review click in the selected period." />
+            </div>
+            <p className={`text-3xl md:text-4xl font-light ${getStyle(activeReviewServers)}`}>{activeReviewServers}</p>
+          </div>
+        </div>
+
+        {/* Rankings */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 shadow-xl">
+            <div className="mb-10 flex items-center justify-between gap-4 border-b border-white/5 pb-6">
+              <p className="text-sm text-white/70 font-medium uppercase tracking-[0.2em]">App Ranking</p>
+              <HelpTooltip text="Ranking of servers by app views generated." />
+            </div>
+
+            <div className="space-y-8">
+              {appRanking.length === 0 ? (
+                <p className="text-base font-light text-white/30 text-center py-6">No data available.</p>
+              ) : (
+                appRanking.slice(0, 5).map((server, index) => (
+                  <div key={server.id} className="relative">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-5">
+                        <span className="text-xs font-medium text-white/30 w-5">0{index + 1}</span>
+                        <span className="text-base text-white/90 font-light tracking-wide">{server.name}</span>
+                      </div>
+                      <span className={`text-base font-normal ${getStyle(server.appViews)}`}>{server.appViews}</span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] opacity-20 uppercase tracking-[0.3em] mb-1 font-medium">Review Clicks</p>
-                      <p className="text-3xl font-light text-white group-hover:text-[#E5D3B3] transition-colors">{serverReviews}</p>
+                    {/* Linha Fina de Progresso Dourada */}
+                    <div className="w-full h-[2px] bg-white/[0.03] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[#E5D3B3]/40 to-[#E5D3B3] rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${(server.appViews / maxAppViews) * 100}%` }}
+                      ></div>
                     </div>
                   </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 shadow-xl">
+            <div className="mb-10 flex items-center justify-between gap-4 border-b border-white/5 pb-6">
+              <p className="text-sm text-white/70 font-medium uppercase tracking-[0.2em]">Review Ranking</p>
+              <HelpTooltip text="Ranking of servers by review clicks generated." />
+            </div>
+
+            <div className="space-y-8">
+              {reviewRanking.length === 0 ? (
+                <p className="text-base font-light text-white/30 text-center py-6">No data available.</p>
+              ) : (
+                reviewRanking.slice(0, 5).map((server, index) => (
+                  <div key={server.id} className="relative">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-5">
+                        <span className="text-xs font-medium text-white/30 w-5">0{index + 1}</span>
+                        <span className="text-base text-white/90 font-light tracking-wide">{server.name}</span>
+                      </div>
+                      <span className={`text-base font-normal ${getStyle(server.reviewClicks)}`}>{server.reviewClicks}</span>
+                    </div>
+                    {/* Linha Fina de Progresso Dourada */}
+                    <div className="w-full h-[2px] bg-white/[0.03] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[#E5D3B3]/40 to-[#E5D3B3] rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${(server.reviewClicks / maxReviewClicks) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Atividades e Insights */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 col-span-1 md:col-span-2">
+            <details className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 group cursor-pointer shadow-xl">
+              <summary className="flex list-none items-center justify-between gap-4 outline-none">
+                <div>
+                  <p className="text-sm text-white/70 font-medium uppercase tracking-[0.2em]">Recent Activity</p>
+                  <p className="mt-2 text-xs text-white/40 font-light">
+                    Open to view latest live events
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        </section>
+                <span className="text-white/50 transition-transform duration-300 group-open:rotate-45 text-xl font-light">+</span>
+              </summary>
 
-        <footer className="mt-24 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 opacity-30">
-          <p className="text-[9px] tracking-[0.4em] uppercase font-light">Looping Media Intelligence © 2026</p>
-          <div className="flex gap-8">
-            <span className="text-[9px] tracking-[0.4em] uppercase font-light underline decoration-white/20 underline-offset-4">Privacy Platform</span>
-            <span className="text-[9px] tracking-[0.4em] uppercase font-light">Chef Experience Tech</span>
+              <div className="mt-10 max-h-[250px] space-y-6 overflow-y-auto pr-6 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent]">
+                <div className="flex items-center justify-between border-b border-white/5 pb-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-2 h-2 rounded-full bg-[#E5D3B3] shadow-[0_0_8px_rgba(229,211,179,0.8)] animate-pulse"></div>
+                    <span className="text-base font-light text-white/90">João generated an app view</span>
+                  </div>
+                  <span className="text-[10px] font-medium text-[#E5D3B3] uppercase tracking-[0.2em] border border-[#E5D3B3]/20 bg-[#E5D3B3]/5 px-3 py-1.5 rounded-md">Live</span>
+                </div>
+
+                <div className="flex items-center justify-between border-b border-white/5 pb-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-2 h-2 rounded-full bg-[#E5D3B3] shadow-[0_0_8px_rgba(229,211,179,0.8)] animate-pulse"></div>
+                    <span className="text-base font-light text-white/90">Paulo generated a review click</span>
+                  </div>
+                  <span className="text-[10px] font-medium text-[#E5D3B3] uppercase tracking-[0.2em] border border-[#E5D3B3]/20 bg-[#E5D3B3]/5 px-3 py-1.5 rounded-md">Live</span>
+                </div>
+              </div>
+            </details>
+
+            <details className="rounded-3xl border border-white/5 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#111] via-[#0a0a0a] to-[#050505] p-10 group cursor-pointer shadow-xl">
+              <summary className="flex list-none items-center justify-between gap-4 outline-none">
+                <div>
+                  <p className="text-sm text-white/70 font-medium uppercase tracking-[0.2em]">Team Insights</p>
+                  <p className="mt-2 text-xs text-white/40 font-light">
+                    Open to view automated alerts
+                  </p>
+                </div>
+                <span className="text-white/50 transition-transform duration-300 group-open:rotate-45 text-xl font-light">+</span>
+              </summary>
+
+              <div className="mt-10 space-y-6">
+                <div className="text-base font-light text-white/80 border-b border-white/5 pb-5 flex items-start gap-4">
+                  <span className="text-[#E5D3B3] mt-0.5">✦</span>
+                  <p><span className="font-medium text-white">João</span> leads app engagement in the selected period.</p>
+                </div>
+
+                <div className="text-base font-light text-white/80 border-b border-white/5 pb-5 flex items-start gap-4">
+                  <span className="text-[#E5D3B3] mt-0.5">✦</span>
+                  <p><span className="font-medium text-white">Paulo</span> leads review generation in the selected period.</p>
+                </div>
+              </div>
+            </details>
           </div>
-        </footer>
+        </div>
       </div>
     </main>
   );
