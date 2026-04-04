@@ -190,3 +190,4 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
       </div>
     </main>
   );
+}
